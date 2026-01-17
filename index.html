@@ -97,7 +97,7 @@
             { id: 'ta', syllable: 'ta', word: 'tas',   emoji: '🎒', pattern: [['ta', 'ta'], ['sa', 'ta'], ['ta', 'ra'], ['qa', 'ta'], ['ta', 'pa'], ['na', 'ta']] },
             { id: 'va', syllable: 'va', word: 'vas',   emoji: '⚱️', pattern: [['va', 'va'], ['ta', 'va'], ['va', 'sa'], ['ra', 'va'], ['va', 'qa'], ['pa', 'va']] },
             { id: 'wa', syllable: 'wa', word: 'wajan', emoji: '🍳', pattern: [['wa', 'wa'], ['va', 'wa'], ['wa', 'ta'], ['sa', 'wa'], ['wa', 'ra'], ['qa', 'wa']] },
-            { id: 'xa', syllable: 'xa', word: 'xavi',  emoji: '⚽', image: 'xavi.jpg', pattern: [['xa', 'xa'], ['wa', 'xa'], ['xa', 'va'], ['ta', 'xa'], ['xa', 'sa'], ['ra', 'xa']] },
+            { id: 'xa', syllable: 'xa', word: 'xavi',  emoji: '⚽', image: './xavi.jpg', pattern: [['xa', 'xa'], ['wa', 'xa'], ['xa', 'va'], ['ta', 'xa'], ['xa', 'sa'], ['ra', 'xa']] },
             { id: 'ya', syllable: 'ya', word: 'yakult', emoji: '🥤', pattern: [['ya', 'ya'], ['xa', 'ya'], ['ya', 'wa'], ['va', 'ya'], ['ya', 'ta'], ['sa', 'ya']] },
             { id: 'za', syllable: 'za', word: 'zaitun',emoji: '🫒', pattern: [['za', 'za'], ['ya', 'za'], ['za', 'xa'], ['wa', 'za'], ['za', 'va'], ['ta', 'za']] },
         ];
@@ -415,9 +415,21 @@
                             <div className="bg-white rounded-3xl shadow-lg p-6 flex flex-col md:flex-row items-center gap-6 border-b-4 border-green-200">
                                 <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-yellow-300 shadow-inner bg-blue-50 shrink-0 flex items-center justify-center">
                                     {/* Menggunakan Emoji Besar */}
-                                    <span className="emoji-display drop-shadow-lg transform hover:scale-110 transition-transform cursor-pointer" onClick={() => speak(data.word)}>
-                                        {data.emoji}
-                                    </span>
+                                    {data.image ? (
+  <img 
+    src={data.image}
+    alt={data.word}
+    className="w-full h-full object-cover rounded-full"
+    onClick={() => speak(data.word)}
+  />
+) : (
+  <span 
+    className="emoji-display drop-shadow-lg cursor-pointer"
+    onClick={() => speak(data.word)}
+  >
+    {data.emoji}
+  </span>
+)}
                                 </div>
                                 <div className="text-center md:text-left flex-1">
                                     <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
