@@ -31,7 +31,6 @@
             -webkit-user-select: none;
         }
         
-        /* Mencegah scroll saat menggambar di canvas */
         canvas {
             touch-action: none;
             cursor: crosshair;
@@ -52,10 +51,9 @@
 
         .pattern-grid div:active {
             transform: scale(0.95);
-            background-color: #fef08a; /* yellow-200 */
+            background-color: #fef08a; 
         }
 
-        /* Custom Emoji Font size for large display */
         .emoji-display {
             font-size: 8rem;
             line-height: 1;
@@ -76,30 +74,43 @@
             return { char, isVowel };
         });
 
-        // Data Suku Kata yang Diperbarui dengan Logika Progresif
+        // DATA SUKU KATA
+        // PERUBAHAN: Posisi 'image' ditaruh di atas 'emoji'.
+        // Logika: Sistem akan cek image dulu. Jika ada & valid -> Tampilkan Foto. Jika gagal/kosong -> Tampilkan Emoji.
+        
         const syllableData = [
-            { id: 'a',  syllable: 'a',  word: 'ayam',  emoji: '🐓', pattern: [['a', 'a'], ['a', 'a'], ['a', 'a'], ['a', 'a'], ['a', 'a'], ['a', 'a']] },
-            { id: 'ba', syllable: 'ba', word: 'balon', emoji: '🎈', pattern: [['ba', 'ba'], ['a', 'ba'], ['ba', 'a'], ['a', 'ba'], ['ba', 'ba'], ['a', 'ba']] },
-            { id: 'ca', syllable: 'ca', word: 'cabe',  emoji: '🌶️', pattern: [['ca', 'ca'], ['ba', 'ca'], ['ca', 'ba'], ['a', 'ca'], ['ca', 'a'], ['ba', 'ca']] },
-            { id: 'da', syllable: 'da', word: 'dasi',  emoji: '👔', pattern: [['da', 'da'], ['ca', 'da'], ['da', 'ba'], ['ba', 'da'], ['da', 'a'], ['a', 'da']] },
-            { id: 'fa', syllable: 'fa', word: 'fajar', emoji: '🌅', pattern: [['fa', 'fa'], ['da', 'fa'], ['fa', 'ca'], ['ba', 'fa'], ['fa', 'a'], ['ca', 'fa']] },
-            { id: 'ga', syllable: 'ga', word: 'gajah', emoji: '🐘', pattern: [['ga', 'ga'], ['fa', 'ga'], ['ga', 'da'], ['ca', 'ga'], ['ga', 'ba'], ['a', 'ga']] },
-            { id: 'ha', syllable: 'ha', word: 'handuk',emoji: '🛁', pattern: [['ha', 'ha'], ['ga', 'ha'], ['ha', 'fa'], ['da', 'ha'], ['ha', 'ca'], ['ba', 'ha']] },
-            { id: 'ja', syllable: 'ja', word: 'jamur', emoji: '🍄', pattern: [['ja', 'ja'], ['ha', 'ja'], ['ja', 'ga'], ['fa', 'ja'], ['ja', 'da'], ['ca', 'ja']] },
-            { id: 'ka', syllable: 'ka', word: 'kado',  emoji: '🎁', pattern: [['ka', 'ka'], ['ja', 'ka'], ['ka', 'ha'], ['ga', 'ka'], ['ka', 'fa'], ['da', 'ka']] },
-            { id: 'la', syllable: 'la', word: 'lampu', emoji: '💡', pattern: [['la', 'la'], ['ka', 'la'], ['la', 'ja'], ['ha', 'la'], ['la', 'ga'], ['fa', 'la']] },
-            { id: 'ma', syllable: 'ma', word: 'mata',  emoji: '👀', pattern: [['ma', 'ma'], ['la', 'ma'], ['ma', 'ka'], ['ja', 'ma'], ['ma', 'ha'], ['ga', 'ma']] },
-            { id: 'na', syllable: 'na', word: 'nanas', emoji: '🍍', pattern: [['na', 'na'], ['ma', 'na'], ['na', 'la'], ['ka', 'na'], ['na', 'ja'], ['ha', 'na']] },
-            { id: 'pa', syllable: 'pa', word: 'paku',  emoji: '🔩', pattern: [['pa', 'pa'], ['na', 'pa'], ['pa', 'ma'], ['la', 'pa'], ['pa', 'ka'], ['ja', 'pa']] },
-            { id: 'qa', syllable: 'qa', word: 'qatar', emoji: '🇶🇦', pattern: [['qa', 'qa'], ['pa', 'qa'], ['qa', 'na'], ['ma', 'qa'], ['qa', 'la'], ['ka', 'qa']] },
-            { id: 'ra', syllable: 'ra', word: 'raja',  emoji: '🤴', pattern: [['ra', 'ra'], ['qa', 'ra'], ['ra', 'pa'], ['na', 'ra'], ['ra', 'ma'], ['la', 'ra']] },
-            { id: 'sa', syllable: 'sa', word: 'satu',  emoji: '1️⃣', pattern: [['sa', 'sa'], ['ra', 'sa'], ['sa', 'qa'], ['pa', 'sa'], ['sa', 'na'], ['ma', 'sa']] },
-            { id: 'ta', syllable: 'ta', word: 'tas',   emoji: '🎒', pattern: [['ta', 'ta'], ['sa', 'ta'], ['ta', 'ra'], ['qa', 'ta'], ['ta', 'pa'], ['na', 'ta']] },
-            { id: 'va', syllable: 'va', word: 'vas',   emoji: '⚱️', pattern: [['va', 'va'], ['ta', 'va'], ['va', 'sa'], ['ra', 'va'], ['va', 'qa'], ['pa', 'va']] },
-            { id: 'wa', syllable: 'wa', word: 'wajan', emoji: '🍳', pattern: [['wa', 'wa'], ['va', 'wa'], ['wa', 'ta'], ['sa', 'wa'], ['wa', 'ra'], ['qa', 'wa']] },
-            { id: 'xa', syllable: 'xa', word: 'xavi',  emoji: '⚽', image: './xavi.jpg', pattern: [['xa', 'xa'], ['wa', 'xa'], ['xa', 'va'], ['ta', 'xa'], ['xa', 'sa'], ['ra', 'xa']] },
-            { id: 'ya', syllable: 'ya', word: 'yakult', emoji: '🥤', pattern: [['ya', 'ya'], ['xa', 'ya'], ['ya', 'wa'], ['va', 'ya'], ['ya', 'ta'], ['sa', 'ya']] },
-            { id: 'za', syllable: 'za', word: 'zaitun',emoji: '🫒', pattern: [['za', 'za'], ['ya', 'za'], ['za', 'xa'], ['wa', 'za'], ['za', 'va'], ['ta', 'za']] },
+            { id: 'a',  syllable: 'a',  word: 'ayam',  image: null, emoji: '🐓', pattern: [['a', 'a'], ['a', 'a'], ['a', 'a'], ['a', 'a'], ['a', 'a'], ['a', 'a']] },
+            { id: 'ba', syllable: 'ba', word: 'balon', image: null, emoji: '🎈', pattern: [['ba', 'ba'], ['a', 'ba'], ['ba', 'a'], ['a', 'ba'], ['ba', 'ba'], ['a', 'ba']] },
+            { id: 'ca', syllable: 'ca', word: 'cabe',  image: null, emoji: '🌶️', pattern: [['ca', 'ca'], ['ba', 'ca'], ['ca', 'ba'], ['a', 'ca'], ['ca', 'a'], ['ba', 'ca']] },
+            { id: 'da', syllable: 'da', word: 'dasi',  image: null, emoji: '👔', pattern: [['da', 'da'], ['ca', 'da'], ['da', 'ba'], ['ba', 'da'], ['da', 'a'], ['a', 'da']] },
+            { id: 'fa', syllable: 'fa', word: 'fajar', image: null, emoji: '🌅', pattern: [['fa', 'fa'], ['da', 'fa'], ['fa', 'ca'], ['ba', 'fa'], ['fa', 'a'], ['ca', 'fa']] },
+            { id: 'ga', syllable: 'ga', word: 'gajah', image: null, emoji: '🐘', pattern: [['ga', 'ga'], ['fa', 'ga'], ['ga', 'da'], ['ca', 'ga'], ['ga', 'ba'], ['a', 'ga']] },
+            { id: 'ha', syllable: 'ha', word: 'handuk',image: null, emoji: '🛁', pattern: [['ha', 'ha'], ['ga', 'ha'], ['ha', 'fa'], ['da', 'ha'], ['ha', 'ca'], ['ba', 'ha']] },
+            { id: 'ja', syllable: 'ja', word: 'jamur', image: null, emoji: '🍄', pattern: [['ja', 'ja'], ['ha', 'ja'], ['ja', 'ga'], ['fa', 'ja'], ['ja', 'da'], ['ca', 'ja']] },
+            { id: 'ka', syllable: 'ka', word: 'kado',  image: null, emoji: '🎁', pattern: [['ka', 'ka'], ['ja', 'ka'], ['ka', 'ha'], ['ga', 'ka'], ['ka', 'fa'], ['da', 'ka']] },
+            { id: 'la', syllable: 'la', word: 'lampu', image: null, emoji: '💡', pattern: [['la', 'la'], ['ka', 'la'], ['la', 'ja'], ['ha', 'la'], ['la', 'ga'], ['fa', 'la']] },
+            { id: 'ma', syllable: 'ma', word: 'mata',  image: null, emoji: '👀', pattern: [['ma', 'ma'], ['la', 'ma'], ['ma', 'ka'], ['ja', 'ma'], ['ma', 'ha'], ['ga', 'ma']] },
+            { id: 'na', syllable: 'na', word: 'nanas', image: null, emoji: '🍍', pattern: [['na', 'na'], ['ma', 'na'], ['na', 'la'], ['ka', 'na'], ['na', 'ja'], ['ha', 'na']] },
+            { id: 'pa', syllable: 'pa', word: 'paku',  image: null, emoji: '🔩', pattern: [['pa', 'pa'], ['na', 'pa'], ['pa', 'ma'], ['la', 'pa'], ['pa', 'ka'], ['ja', 'pa']] },
+            { id: 'qa', syllable: 'qa', word: 'qatar', image: null, emoji: '🇶🇦', pattern: [['qa', 'qa'], ['pa', 'qa'], ['qa', 'na'], ['ma', 'qa'], ['qa', 'la'], ['ka', 'qa']] },
+            { id: 'ra', syllable: 'ra', word: 'raja',  image: null, emoji: '🤴', pattern: [['ra', 'ra'], ['qa', 'ra'], ['ra', 'pa'], ['na', 'ra'], ['ra', 'ma'], ['la', 'ra']] },
+            { id: 'sa', syllable: 'sa', word: 'satu',  image: null, emoji: '1️⃣', pattern: [['sa', 'sa'], ['ra', 'sa'], ['sa', 'qa'], ['pa', 'sa'], ['sa', 'na'], ['ma', 'sa']] },
+            { id: 'ta', syllable: 'ta', word: 'tas', image: null, emoji: '🎒', pattern: [['ta', 'ta'], ['sa', 'ta'], ['ta', 'ra'], ['qa', 'ta'], ['ta', 'pa'], ['na', 'ta']] },
+            { id: 'va', syllable: 'va', word: 'vas',   image: null, emoji: '⚱️', pattern: [['va', 'va'], ['ta', 'va'], ['va', 'sa'], ['ra', 'va'], ['va', 'qa'], ['pa', 'va']] },
+            { id: 'wa', syllable: 'wa', word: 'wajan', image: null, emoji: '🍳', pattern: [['wa', 'wa'], ['va', 'wa'], ['wa', 'ta'], ['sa', 'wa'], ['wa', 'ra'], ['qa', 'wa']] },
+            
+            // --- DATA DENGAN FOTO (Nama File Angka dari Anda) ---
+            { 
+                id: 'xa', 
+                syllable: 'xa', 
+                word: 'xavi', 
+                image: './xavi.jpg', 
+                emoji: '⚽', 
+                pattern: [['xa', 'xa'], ['wa', 'xa'], ['xa', 'va'], ['ta', 'xa'], ['xa', 'sa'], ['ra', 'xa']] 
+            },
+            
+            { id: 'ya', syllable: 'ya', word: 'yakult', image: null, emoji: '🥤', pattern: [['ya', 'ya'], ['xa', 'ya'], ['ya', 'wa'], ['va', 'ya'], ['ya', 'ta'], ['sa', 'ya']] },
+            { id: 'za', syllable: 'za', word: 'zaitun',image: null, emoji: '🫒', pattern: [['za', 'za'], ['ya', 'za'], ['za', 'xa'], ['wa', 'za'], ['za', 'va'], ['ta', 'za']] },
         ];
 
         const reflectionDataRaw = [
@@ -139,7 +150,6 @@
 
         // --- COMPONENTS ---
 
-        // Komponen Canvas untuk Menggambar (Menebalkan & Dikte)
         const DrawingCanvas = ({ width, height, traceText, title, className, penColor = "#000000", fontSize = 60 }) => {
             const canvasRef = useRef(null);
             const [isDrawing, setIsDrawing] = useState(false);
@@ -148,7 +158,6 @@
                 const canvas = canvasRef.current;
                 const ctx = canvas.getContext('2d');
                 
-                // Set resolusi tinggi untuk layar retina
                 const dpr = window.devicePixelRatio || 1;
                 canvas.width = width * dpr;
                 canvas.height = height * dpr;
@@ -160,15 +169,13 @@
                 ctx.lineJoin = "round";
                 ctx.lineWidth = 4;
 
-                // Jika ada teks untuk ditebalkan (Trace Mode)
                 if (traceText) {
                     ctx.font = `bold ${fontSize}px 'Fredoka', sans-serif`;
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
-                    ctx.fillStyle = "#e5e7eb"; // Abu-abu terang
-                    // Stroke putus-putus
+                    ctx.fillStyle = "#e5e7eb"; 
                     ctx.strokeStyle = "#d1d5db";
-                    ctx.setLineDash([8, 8]); // Lebih jarang agar lebih jelas putus-putusnya
+                    ctx.setLineDash([8, 8]);
                     ctx.lineWidth = 3;
                     
                     const centerX = width / 2;
@@ -177,7 +184,6 @@
                     ctx.fillText(traceText, centerX, centerY);
                     ctx.strokeText(traceText, centerX, centerY);
                     
-                    // Reset untuk user menggambar
                     ctx.setLineDash([]);
                     ctx.lineWidth = 5;
                 }
@@ -195,7 +201,7 @@
                 const canvas = canvasRef.current;
                 const ctx = canvas.getContext('2d');
                 ctx.strokeStyle = penColor;
-                ctx.lineWidth = 5; // Ketebalan pena
+                ctx.lineWidth = 5; 
                 
                 let x, y;
                 if (e.nativeEvent.touches) {
@@ -241,12 +247,11 @@
             const clearCanvas = () => {
                 const canvas = canvasRef.current;
                 const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height); // Hapus semua
+                ctx.clearRect(0, 0, canvas.width, canvas.height); 
                 
-                // Gambar ulang trace text jika ada
                 if (traceText) {
                     const dpr = window.devicePixelRatio || 1;
-                    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+                    ctx.setTransform(1, 0, 0, 1, 0, 0); 
                     ctx.scale(dpr, dpr);
 
                     ctx.font = `bold ${fontSize}px 'Fredoka', sans-serif`;
@@ -292,7 +297,6 @@
 
         // --- SCREENS ---
 
-        // 1. Screen: Alphabet / Vowel
         const AlphabetScreen = ({ onBack, filterVowel }) => {
             const data = filterVowel ? alphabetData.filter(d => d.isVowel) : alphabetData;
             
@@ -330,7 +334,6 @@
             );
         };
 
-        // 2. Screen: Syllable Menu
         const SyllableMenu = ({ onBack, onSelect }) => {
             return (
                 <div className="h-full flex flex-col">
@@ -360,7 +363,6 @@
             );
         };
 
-        // 3. Screen: Syllable Lesson
         const SyllableLesson = ({ data, onBack }) => {
             
             useEffect(() => {
@@ -368,22 +370,18 @@
             }, [data]);
 
             const [canvasSize, setCanvasSize] = useState({ width: 300, height: 150 });
-            // Mengubah ukuran default kotak dikte menjadi lebih besar
             const [dikteSize, setDikteSize] = useState({ width: 100, height: 100 });
 
             useEffect(() => {
                 const handleResize = () => {
                     const width = window.innerWidth;
-                    const containerPadding = 32; // Approx padding
+                    const containerPadding = 32; 
                     
-                    if (width < 640) { // Mobile
-                        // Canvas Menebalkan fit screen width
+                    if (width < 640) { 
                         setCanvasSize({ width: width - 48, height: 140 }); 
-                        
-                        // Dikte: 3 columns. Width / 3 roughly
                         const dikteW = (width - 64) / 3;
                         setDikteSize({ width: dikteW, height: dikteW });
-                    } else { // Tablet/Desktop
+                    } else { 
                         setCanvasSize({ width: 600, height: 200 });
                         setDikteSize({ width: 150, height: 150 });
                     }
@@ -395,7 +393,6 @@
 
             return (
                 <div className="h-full flex flex-col bg-slate-50">
-                    {/* Header */}
                     <div className="flex items-center justify-between p-3 bg-white shadow-sm sticky top-0 z-30">
                         <button onClick={onBack} className="bg-red-500 text-white w-10 h-10 rounded-full shadow hover:bg-red-600">
                             <i className="fas fa-arrow-left"></i>
@@ -411,37 +408,48 @@
                     <div className="flex-1 overflow-y-auto pb-20">
                         <div className="max-w-3xl mx-auto p-4 space-y-8">
                             
-                            {/* Section 1: Visual & Word (Emoji Based) */}
+                            {/* Section 1: Visual & Word (Priority: Image > Emoji) */}
                             <div className="bg-white rounded-3xl shadow-lg p-6 flex flex-col md:flex-row items-center gap-6 border-b-4 border-green-200">
-                                <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-yellow-300 shadow-inner bg-blue-50 shrink-0 flex items-center justify-center">
-                                    {/* Menggunakan Emoji Besar */}
+                                <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-yellow-300 shadow-inner bg-blue-50 shrink-0 flex items-center justify-center relative">
+                                    
+                                    {/* PRIORITAS 1: FOTO. Jika ada 'image', coba tampilkan. */}
                                     {data.image ? (
-  <img 
-    src={data.image}
-    alt={data.word}
-    className="w-full h-full object-cover rounded-full"
-    onClick={() => speak(data.word)}
-  />
-) : (
-  <span 
-    className="emoji-display drop-shadow-lg cursor-pointer"
-    onClick={() => speak(data.word)}
-  >
-    {data.emoji}
-  </span>
-)}
+                                        <img 
+                                            src={data.image} 
+                                            alt={data.word} 
+                                            className="w-full h-full object-cover cursor-pointer hover:scale-110 transition-transform"
+                                            onClick={() => speak(data.word)}
+                                            onError={(e) => {
+                                                // Jika foto error/tidak ketemu:
+                                                e.target.style.display = 'none'; // 1. Sembunyikan tag img
+                                                e.target.nextSibling.style.display = 'block'; // 2. Munculkan emoji (elemen span di bawahnya)
+                                            }}
+                                        />
+                                    ) : null}
+
+                                    {/* PRIORITAS 2: EMOJI (Fallback).
+                                        Jika data.image ADA, emoji disembunyikan (display: none).
+                                        Jika data.image KOSONG, emoji langsung muncul (display: block).
+                                    */}
+                                    <span 
+                                        className="emoji-display drop-shadow-lg transform hover:scale-110 transition-transform cursor-pointer" 
+                                        style={{display: data.image ? 'none' : 'block'}}
+                                        onClick={() => speak(data.word)}
+                                    >
+                                        {data.emoji}
+                                    </span>
+
                                 </div>
                                 <div className="text-center md:text-left flex-1">
                                     <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
                                         <span className="text-7xl font-black text-red-500 font-hand">{data.syllable}</span>
                                         <i className="fas fa-arrow-right text-gray-300"></i>
-                                        <span className="text-5xl font-bold text-gray-800">{data.word}</span>
+                                        <span className="text-5xl font-bold text-gray-800 capitalize">{data.word}</span>
                                     </div>
                                     <p className="text-gray-400 text-sm italic">Klik gambar atau speaker untuk suara</p>
                                 </div>
                             </div>
 
-                            {/* Section 2: Reading Pattern */}
                             <div className="space-y-3">
                                 <div className="flex items-center gap-2 mb-2">
                                     <div className="bg-orange-500 text-white p-2 rounded-lg shadow"><i className="fas fa-book-open"></i></div>
@@ -457,7 +465,6 @@
                                 </div>
                             </div>
 
-                            {/* Section 3: Menebalkan (Canvas) */}
                             <div className="space-y-3">
                                 <div className="flex items-center gap-2 mb-2">
                                     <div className="bg-pink-500 text-white p-2 rounded-lg shadow"><i className="fas fa-pencil-alt"></i></div>
@@ -470,14 +477,14 @@
                                             height={canvasSize.height} 
                                             traceText={`${data.syllable}  ${data.syllable}  ${data.syllable}`} 
                                             penColor="#ec4899"
-                                            fontSize={80} // Ukuran font diperbesar
+                                            fontSize={80} 
                                         />
                                         <DrawingCanvas 
                                             width={canvasSize.width} 
                                             height={canvasSize.height} 
                                             traceText={`${data.syllable}  ${data.syllable}  ${data.syllable}`} 
                                             penColor="#ec4899"
-                                            fontSize={80} // Ukuran font diperbesar
+                                            fontSize={80} 
                                         />
                                     </div>
                                     <p className="text-center text-gray-500 text-sm mt-4 flex items-center gap-1">
@@ -486,7 +493,6 @@
                                 </div>
                             </div>
 
-                            {/* Section 4: Menulis & Dikte (6 Boxes - 2 baris x 3 kolom) */}
                             <div className="space-y-3">
                                 <div className="flex items-center gap-2 mb-2">
                                     <div className="bg-blue-500 text-white p-2 rounded-lg shadow"><i className="fas fa-edit"></i></div>
@@ -494,7 +500,6 @@
                                 </div>
                                 <div className="bg-blue-50 rounded-2xl p-4 border-2 border-blue-200">
                                     
-                                    {/* Grid Layout 3 kolom (Total 6 kotak) */}
                                     <div className="grid grid-cols-3 gap-3 md:gap-6 justify-items-center">
                                         {Array(6).fill(0).map((_, i) => (
                                             <DrawingCanvas 
@@ -508,7 +513,6 @@
                                         ))}
                                     </div>
 
-                                    {/* Saran Stylus / Pen Tablet */}
                                     <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
                                         <div className="bg-yellow-400 text-white p-2 rounded-full shrink-0">
                                             <i className="fas fa-pen-fancy"></i>
@@ -531,7 +535,6 @@
             );
         };
 
-        // 4. Screen: Reflection
         const ReflectionScreen = ({ onBack }) => {
             const [pages, setPages] = useState([]);
             const [currentIndex, setCurrentIndex] = useState(0);
@@ -568,7 +571,6 @@
 
                     <div className="flex-1 flex flex-col justify-center p-6 md:p-10 max-w-2xl mx-auto w-full">
                         <div className="bg-white p-8 rounded-3xl shadow-xl border-t-8 border-purple-400 relative">
-                            {/* Paper holes decoration */}
                             <div className="absolute top-0 bottom-0 -left-3 flex flex-col justify-center gap-8">
                                 <div className="w-6 h-6 bg-gray-200 rounded-full shadow-inner border border-gray-300"></div>
                                 <div className="w-6 h-6 bg-gray-200 rounded-full shadow-inner border border-gray-300"></div>
@@ -600,9 +602,8 @@
             );
         };
 
-        // --- MAIN APP SHELL ---
         const App = () => {
-            const [currentScreen, setCurrentScreen] = useState('menu'); // menu, alphabet, vowel, syllableMenu, syllableLesson, reflection
+            const [currentScreen, setCurrentScreen] = useState('menu'); 
             const [selectedSyllable, setSelectedSyllable] = useState(null);
 
             const renderScreen = () => {
@@ -689,7 +690,6 @@
                 <div className="z-10 bg-white/20 p-4 rounded-full backdrop-blur-sm">
                     <i className={`fas ${icon} text-3xl text-white`}></i>
                 </div>
-                {/* Decorative circle */}
                 <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
             </button>
         );
@@ -699,5 +699,4 @@
     </script>
 </body>
 </html>
-
 
