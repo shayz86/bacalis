@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bacalis - Belajar Baca Tulis</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Fredoka', sans-serif; background-color: #f0f9ff; overscroll-behavior: none; user-select: none; -webkit-user-select: none; }
+        canvas { touch-action: none; cursor: crosshair; }
+        .font-hand { font-family: 'Patrick Hand', cursive; }
+        .animate-pop { animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes pop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .pattern-grid div:active { transform: scale(0.95); background-color: #fef08a; }
+        .emoji-display { font-size: 8rem; line-height: 1; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- GLOBAL UTILS ---
+        const speak = (text, voiceIndex = 0) => {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        
+        let phoneticText = text.toLowerCase();
+
+        // --- PERBAIKAN LOGIKA HURUF C ---
+        if (phoneticText === 'c') {
+            // Jika hanya huruf "C" sendirian (Menu Abjad), paksa baca "Ce"
+            phoneticText = 'ce'; 
+        } else {
+            // Jika kata-kata (Menu Suku Kata), ganti 'c' menjadi 'ch' 
+            // Supaya 'cabe' dibaca 'chabe' (benar), bukan 'kabe'
+            phoneticText = phoneticText.replace(/c/g, 'ch');
+        }
+        
+        const utterance = new SpeechSynthesisUtterance(phoneticText);
+        utterance.lang = 'id-ID';
+        utterance.rate = 0.8;
+
+        const voices = window.speechSynthesis.getVoices();
+        const idVoices = voices.filter(v => v.lang.includes('id') || v.lang.includes('ID'));
+
+        if (idVoices.length > 0) {
+            utterance.voice = idVoices[voiceIndex] || idVoices[0];
+        }
+
+        window.speechSynthesis.speak(utterance);
+    }
+};
+
+        // --- DATA ---
+        const alphabetData = Array.from({ length: 26 }, (_, i) => ({
+            char: String.fromCharCode(65 + i),
+            isVowel: ['A', 'I', 'U', 'E', 'O'].includes(String.fromCharCode(65 + i))
+        }));
+
+        const syllableData = [
+    { id: 'a i',  syllable: 'a-i',  word: 'api',  image: null, emoji: '🔥', pattern: [['ba', 'bi'], ['ca', 'ci'], ['da', 'di'], ['fa', 'fi'], ['ga', 'gi'], ['ha', 'hi'], ['ja', 'ji'], ['ka', 'ki'], ['la', 'li'], ['ma', 'mi'], ['na', 'ni'], ['pa', 'pi'], ['qa', 'qi'], ['ra', 'ri'], ['sa', 'si'], ['ta', 'ti'], ['va', 'vi'], ['wa', 'wi'], ['xa', 'xi'], ['ya', 'yi'], ['za', 'zi']] },
+    { id: 'bi',  syllable: 'bi',  word: 'bintang',  image: null, emoji: '⭐', pattern: [['bi', 'bi'], ['ba', 'bi'], ['bi', 'sa'], ['bi', 'na'], ['ba', 'gi'], ['na', 'bi'], ['bi', 'ra'], ['ba', 'ba', 'bi']] },
+    { id: 'ci',  syllable: 'ci',  word: 'cicak', image: null, emoji: '🦎', pattern: [['ci', 'ci'], ['ca', 'ci'], ['ci', 'ta'], ['ba', 'ci'], ['ci', 'ka'], ['ci', 'ra'], ['pa', 'ci'], ['ka', 'ca', 'ci']] },
+    { id: 'di',  syllable: 'di',  word: 'dino',  image: null, emoji: '🦕', pattern: [['di', 'di'], ['di', 'a'], ['da', 'ri'], ['pa', 'di'], ['ja', 'di'], ['di', 'na'], ['ba', 'di'], ['ha', 'di']] },
+    { id: 'fi',  syllable: 'fi',  word: 'film',  image: null, emoji: '🎬', pattern: [['fi', 'fi'], ['fa', 'ni'], ['fi', 'ra'], ['fi', 'da'], ['fi', 'sa'], ['fi', 'la'], ['fi', 'ka'], ['fi', 'ma']] },
+    { id: 'gi',  syllable: 'gi',  word: 'gigi',  image: null, emoji: '🦷', pattern: [['gi', 'gi'], ['pa', 'gi'], ['ba', 'gi'], ['gi', 'ga'], ['gi', 'na'], ['ga', 'ri'], ['gi', 'ri'], ['ba', 'ga', 'gi']] },
+    { id: 'hi',  syllable: 'hi',  word: 'hiu',   image: null, emoji: '🦈', pattern: [['ha', 'ri'], ['da', 'hi'], ['hi', 'u'], ['ma', 'hi'], ['hi', 'na'], ['ba', 'hi'], ['hi', 'sa'], ['hi', 'hi']] },
+    { id: 'ji',  syllable: 'ji',  word: 'jin',  image: null, emoji: '🧞‍♂️', pattern: [['ha', 'ji'], ['ga', 'ji'], ['ja', 'ri'], ['bi', 'ji'], ['ja', 'ji'], ['ji', 'ka'], ['ji', 'wa'], ['ba', 'ji']] },
+    { id: 'ki',  syllable: 'ki',  word: 'kiri',  image: null, emoji: '⬅️', pattern: [['ka', 'ki'], ['a', 'ki'], ['da', 'ki'], ['ki', 'ri'], ['ki', 'ta'], ['ki', 'ki'], ['ba', 'ki'], ['ki', 'ra']] },
+    { id: 'li',  syllable: 'li',  word: 'lima',  image: null, emoji: '🖐️', pattern: [['li', 'ma'], ['ta', 'li'], ['wa', 'li'], ['la', 'ri'], ['ba', 'li'], ['ka', 'li'], ['li', 'ra'], ['li', 'la']] },
+    { id: 'mi',  syllable: 'mi',  word: 'minum',  image: null, emoji: '🥛', pattern: [['ma', 'mi'], ['mi', 'mi'], ['ka', 'mi'], ['a', 'mi'], ['mi', 'na'], ['mi', 'ra'], ['mi', 'ta'], ['mi', 'a']] },
+    { id: 'ni',  syllable: 'ni',  word: 'ninja',  image: null, emoji: '🥷🏻', pattern: [['ni', 'ni'], ['ni', 'na'], ['ta', 'ni'], ['ba', 'ni'], ['pa', 'ni'], ['ni', 'sa'], ['ni', 'ra'], ['na', 'ni']] },
+    { id: 'pi',  syllable: 'pi',  word: 'pintu',  image: null, emoji: '🚪', pattern: [['pi', 'pi'], ['pa', 'pi'], ['a', 'pi'], ['sa', 'pi'], ['ta', 'pi'], ['pi', 'pa'], ['pi', 'ta'], ['ra', 'pi']] },
+    { id: 'qi',  syllable: 'qi',  word: 'qiyas',  image: './qiyas.jpg', emoji: '📖', pattern: [['qi', 'ra'], ['qa', 'ri'], ['qi', 'qi'], ['ba', 'qi'], ['qi', 'sa'], ['qi', 'na'], ['qi', 'ta'], ['qi', 'ra']] },
+    { id: 'ri',  syllable: 'ri',  word: 'jari',  image: null, emoji: '☝️', pattern: [['ja', 'ri'], ['la', 'ri'], ['da', 'ri'], ['ma', 'ri'], ['ri', 'a'], ['ci', 'ri'], ['ki', 'ri'], ['ri', 'na']] },
+    { id: 'si',  syllable: 'si',  word: 'sikat',  image: null, emoji: '🪥', pattern: [['si', 'si'], ['na', 'si'], ['ba', 'si'], ['da', 'si'], ['si', 'sa'], ['si', 'ra'], ['si', 'ta'], ['wa', 'si']] },
+    { id: 'ti',  syllable: 'ti',  word: 'tikus',  image: null, emoji: '🐀', pattern: [['ma', 'ti'], ['pa', 'ti'], ['ha', 'ti'], ['ti', 'ti'], ['ta', 'ti'], ['ti', 'ga'], ['ti', 'ra'], ['bu', 'pa', 'ti']] },
+    { id: 'vi',  syllable: 'vi',  word: 'virus',  image: null, emoji: '🦠', pattern: [['vi', 'vi'], ['vi', 'ra'], ['vi', 'na'], ['vi', 'ta'], ['vi', 'si'], ['vi', 'ka'], ['vi', 'la'], ['vi', 'sa']] },
+    { id: 'wi',  syllable: 'wi',  word: 'wisuda',  image: null, emoji: '👨🏻‍🎓', pattern: [['sa', 'wi'], ['wi', 'ra'], ['wi', 'wi'], ['wi', 'da'], ['wi', 'ka'], ['wi', 'ta'], ['wi', 'na'], ['wi', 'sa']] },
+    { id: 'xi',  syllable: 'xi',  word: 'xilofon',  image: './xilofon.jpg', emoji: '🎶', pattern: [['ta', 'xi'], ['xi', 'xi'], ['xa', 'xi'], ['ba', 'xi'], ['xi', 'ra'], ['xi', 'na'], ['xi', 'sa'], ['xi', 'ta']] },
+    { id: 'yi',  syllable: 'yi',  word: 'bayi',  image: null, emoji: '👶', pattern: [['ba', 'yi'], ['ya', 'yi'], ['yi', 'yi'], ['sa', 'yi'], ['yi', 'na'], ['yi', 'ta'], ['yi', 'sa'], ['yi', 'ka']] },
+    { id: 'zi',  syllable: 'zi',  word: 'gizi',  image: './gizi.jpg', emoji: '🥦', pattern: [['gi', 'zi'], ['zi', 'na'], ['ba', 'zi'], ['za', 'zi'], ['zi', 'ra'], ['zi', 'ta'], ['zi', 'sa'], ['zi', 'ka']] },
+];
+
+                const reflectionDataRaw = [
+    ["nama saya rani", "mama saya rani", "papa saya hadi", "saya suka lari", "mari lari pagi"],
+    ["bibi bawa pita", "pita nina tiga", "pita rani lima", "pita nani sapa", "pita saya mana"],
+    ["ini kaki nina", "kaki nina lima", "gigi saya tiga", "gigi nani ada", "gigi papa mana"],
+    ["nasi mama ada", "sawi papa tiga", "mama bawa sawi", "papa suka nasi", "nasi nina mana"],
+    ["pipi saya rona", "hati saya suka", "pipi nani ada", "hati bibi sapa", "pipi papa mana"],
+    ["mari lari pagi", "lari sama nina", "nani lari pagi", "papa lari juga", "rani lari sana"],
+    ["saya jadi bisa", "nina bisa baca", "rani bisa lari", "nani jadi raja", "papa bisa apa"],
+    ["dari mana nina", "nina dari sana", "mana pita mama", "pita ada sana", "mama dari mana"],
+    ["jari saya lima", "biji sawi ada", "jari papa tiga", "biji nina mana", "jari rani ada"],
+    ["hari ini apa", "hari nina suka", "nani sapa mama", "papa sapa bibi", "rani sapa nani"],
+    ["tali rani ada", "tali nani tiga", "bibi bawa tali", "tali mama mana", "tali papa ada"],
+    ["rupa nina kaya", "ciri rani ada", "mama rupa apa", "rani rupa nani", "ciri nina mana"],
+    ["sapi papa ada", "sapi rani tiga", "mama bawa sapi", "sapi nina mana", "sapi lari sana"],
+    ["nina ada sini", "mama ada sana", "papa lari sini", "bibi lari sana", "nani ada sini"],
+    ["dasi papa rapi", "dasi rani ada", "nani bawa dasi", "dasi nina mana", "dasi mama rapi"],
+    ["dahi nina ada", "mata papa ada", "dahi mama rona", "mata bibi ada", "mata nina mana"],
+    ["cita nina jaya", "cita rani ada", "cita mama apa", "cita nani jaya", "cita papa ada"],
+    ["pagi hari lari", "hari nina jaya", "rani lari pagi", "pagi papa ada", "hari mama jaya"],
+    ["mimi nina ada", "mimi rani tiga", "mimi nani mana", "mimi mama ada", "mimi papa rapi"],
+    ["mama papa rani", "rani suka lari", "lari lari pagi", "hari hari jaya", "saya jadi bisa"]
+];
+
+        // --- COMPONENTS ---
+
+        const DrawingCanvas = ({ width, height, traceText, title, className, penColor = "#000000", fontSize = 60 }) => {
+            const canvasRef = useRef(null);
+            const [isDrawing, setIsDrawing] = useState(false);
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = width * dpr; canvas.height = height * dpr;
+                canvas.style.width = `${width}px`; canvas.style.height = `${height}px`;
+                ctx.scale(dpr, dpr); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.lineWidth = 4;
+                if (traceText) {
+                    ctx.font = `bold ${fontSize}px 'Fredoka', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                    ctx.fillStyle = "#e5e7eb"; ctx.strokeStyle = "#d1d5db"; ctx.setLineDash([8, 8]); ctx.lineWidth = 3;
+                    ctx.fillText(traceText, width / 2, height / 2); ctx.strokeText(traceText, width / 2, height / 2);
+                    ctx.setLineDash([]); ctx.lineWidth = 5;
+                }
+            }, [width, height, traceText, fontSize]);
+
+            const getTouchPos = (canvas, evt) => {
+                const rect = canvas.getBoundingClientRect();
+                return { x: (evt.touches[0].clientX - rect.left), y: (evt.touches[0].clientY - rect.top) };
+            };
+            const startDrawing = (e) => {
+                const canvas = canvasRef.current; const ctx = canvas.getContext('2d');
+                ctx.strokeStyle = penColor; ctx.lineWidth = 5;
+                let x, y; if (e.nativeEvent.touches) { const pos = getTouchPos(canvas, e.nativeEvent); x = pos.x; y = pos.y; }
+                else { x = e.nativeEvent.offsetX; y = e.nativeEvent.offsetY; }
+                ctx.beginPath(); ctx.moveTo(x, y); setIsDrawing(true);
+            };
+            const draw = (e) => {
+                if (!isDrawing) return; const canvas = canvasRef.current; const ctx = canvas.getContext('2d');
+                let x, y; if (e.nativeEvent.touches) { const pos = getTouchPos(canvas, e.nativeEvent); x = pos.x; y = pos.y; }
+                else { x = e.nativeEvent.offsetX; y = e.nativeEvent.offsetY; }
+                ctx.lineTo(x, y); ctx.stroke();
+            };
+            const clearCanvas = () => {
+                const canvas = canvasRef.current; const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                if (traceText) {
+                    const dpr = window.devicePixelRatio || 1; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.scale(dpr, dpr);
+                    ctx.font = `bold ${fontSize}px 'Fredoka', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                    ctx.fillStyle = "#e5e7eb"; ctx.strokeStyle = "#d1d5db"; ctx.setLineDash([8, 8]); ctx.lineWidth = 3;
+                    ctx.fillText(traceText, width/2, height/2); ctx.strokeText(traceText, width/2, height/2);
+                    ctx.setLineDash([]); ctx.strokeStyle = penColor; ctx.lineWidth = 5;
+                }
+            };
+            return (
+                <div className={`relative flex flex-col items-center ${className}`}>
+                    <canvas ref={canvasRef} onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={() => setIsDrawing(false)}
+                        onMouseLeave={() => setIsDrawing(false)} onTouchStart={startDrawing} onTouchMove={draw}
+                        onTouchEnd={() => setIsDrawing(false)} className="bg-white rounded-xl shadow-sm border-2 border-dashed border-gray-300 touch-none" />
+                    <button onClick={clearCanvas} className="absolute -top-3 -right-3 bg-red-500 text-white w-8 h-8 rounded-full text-sm shadow-md z-10 flex items-center justify-center transition-transform active:scale-95"><i className="fas fa-trash"></i></button>
+                </div>
+            );
+        };
+
+        const AlphabetScreen = ({ onBack, filterVowel, voiceIndex }) => {
+    // Data huruf
+    const data = filterVowel 
+        ? [
+            {char: 'A', isVowel: true}, {char: 'I', isVowel: true},
+            {char: 'U', isVowel: true}, {char: 'E', isVowel: true},
+            {char: 'O', isVowel: true}
+          ]
+        : alphabetData;
+
+    return (
+        <div className="h-full flex flex-col">
+            <div className="flex items-center justify-between p-4 bg-white shadow-sm sticky top-0 z-20">
+                <button onClick={onBack} className="bg-red-500 text-white w-10 h-10 rounded-full shadow-lg hover:bg-red-600 active:scale-95 transition-transform">
+                    <i className="fas fa-arrow-left"></i>
+                </button>
+                <h1 className="text-2xl font-bold text-gray-700">
+                    {filterVowel ? "BELAJAR VOKAL" : "BELAJAR ABJAD"}
+                </h1>
+                <div className="w-10"></div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 bg-amber-50">
+                {/* LOGIKA POSISI:
+                   - flex-wrap: Agar tombol turun ke bawah jika tidak muat.
+                   - justify-center: Agar tombol yang tersisa (O) otomatis ke tengah.
+                   - gap-4: Jarak antar tombol.
+                */}
+                <div className="flex flex-wrap justify-center gap-4">
+                    {data.map(item => (
+                        <div 
+                            key={item.char}
+                            onClick={() => speak(item.char.toLowerCase(), voiceIndex)}
+                            className={`
+                                /* LOGIKA LEBAR TOMBOL: */
+                                /* Jika Vokal (A-O), lebar 45% (agar muat 2 per baris: A-I, U-E, O sendiri). */
+                                /* Jika Abjad (A-Z), lebar lebih kecil agar muat banyak. */
+                                ${filterVowel ? 'w-[42%]' : 'w-[28%] md:w-[15%]'} 
+                                
+                                aspect-square rounded-2xl flex flex-col items-center justify-center shadow-lg cursor-pointer
+                                transform transition hover:scale-105 active:scale-95
+                                ${item.isVowel ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 text-white' : 'bg-white text-blue-600'}
+                            `}
+                        >
+                            <span className="text-6xl md:text-7xl font-black drop-shadow-md">{item.char}</span>
+                            {item.isVowel && <span className="text-xs font-bold bg-white text-yellow-600 px-2 py-1 rounded-full mt-2 uppercase">VOKAL</span>}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+        const SyllableLesson = ({ data, onBack, voiceIndex }) => {
+            useEffect(() => { speak(`${data.syllable}. ${data.word}`, voiceIndex); }, [data, voiceIndex]);
+            const [canvasSize, setCanvasSize] = useState({ width: 300, height: 150 });
+            const [dikteSize, setDikteSize] = useState({ width: 100, height: 100 });
+            useEffect(() => {
+                const handleResize = () => {
+                    const width = window.innerWidth;
+                    if (width < 640) { setCanvasSize({ width: width - 48, height: 140 }); const dikteW = (width - 64) / 3; setDikteSize({ width: dikteW, height: dikteW }); }
+                    else { setCanvasSize({ width: 600, height: 200 }); setDikteSize({ width: 150, height: 150 }); }
+                };
+                handleResize(); window.addEventListener('resize', handleResize); return () => window.removeEventListener('resize', handleResize);
+            }, []);
+
+            return (
+                <div className="h-full flex flex-col bg-slate-50">
+                    <div className="flex items-center justify-between p-3 bg-white shadow-sm sticky top-0 z-30">
+                        <button onClick={onBack} className="bg-red-500 text-white w-10 h-10 rounded-full shadow hover:bg-red-600"><i className="fas fa-arrow-left"></i></button>
+                        <h1 className="text-xl md:text-2xl font-black text-gray-700 uppercase">BELAJAR: <span className="text-green-600">{data.syllable}</span></h1>
+                        <button onClick={() => speak(data.word, voiceIndex)} className="bg-green-500 text-white w-10 h-10 rounded-full shadow hover:bg-green-600 animate-pulse"><i className="fas fa-volume-up"></i></button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto pb-20">
+                        <div className="max-w-3xl mx-auto p-4 space-y-8">
+                            <div className="bg-white rounded-3xl shadow-lg p-6 flex flex-col md:flex-row items-center gap-6 border-b-4 border-green-200">
+                                <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-yellow-300 shadow-inner bg-blue-50 shrink-0 flex items-center justify-center relative">
+                                    {data.image ? (
+                                        <img src={data.image} alt={data.word} className="w-full h-full object-cover cursor-pointer hover:scale-110 transition-transform"
+                                            onClick={() => speak(data.word, voiceIndex)} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
+                                    ) : null}
+                                    <span className="emoji-display drop-shadow-lg transform hover:scale-110 transition-transform cursor-pointer" 
+                                        style={{display: data.image ? 'none' : 'block'}} onClick={() => speak(data.word, voiceIndex)}>{data.emoji}</span>
+                                </div>
+                                <div className="text-center md:text-left flex-1">
+                                    <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+                                        <span className="text-7xl font-black text-red-500 font-hand">{data.syllable}</span>
+                                        <i className="fas fa-arrow-right text-gray-300"></i>
+                                        <span className="text-5xl font-bold text-gray-800 capitalize">{data.word}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-2"><div className="bg-orange-500 text-white p-2 rounded-lg shadow"><i className="fas fa-book-open"></i></div><h3 className="text-xl font-bold text-gray-700">Ayo Membaca</h3></div>
+                                <div className="bg-orange-50 rounded-2xl p-4 border-2 border-orange-200 grid grid-cols-2 gap-4">
+                                    {data.pattern.map((row, idx) => (
+                                        <div key={idx} className="flex flex-col items-center justify-center p-3 border-b border-orange-100 last:border-0 bg-white shadow-sm rounded-xl">
+                                            <div className="flex flex-wrap justify-center text-2xl md:text-3xl font-bold text-gray-700 tracking-wide">
+                                                {row.map((syl, sIdx) => (
+                                                    <span key={sIdx} className="hover:text-orange-600 cursor-pointer" onClick={() => speak(syl, voiceIndex)}>
+                                                        {syl}{sIdx < row.length - 1 ? '-' : ''}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            <span className="text-[10px] md:text-xs text-orange-400 font-medium uppercase tracking-[0.2em] mt-1 cursor-pointer hover:text-orange-600"
+                                                onClick={() => speak(row.join('. '), voiceIndex)}>{row.join('')}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-2"><div className="bg-pink-500 text-white p-2 rounded-lg shadow"><i className="fas fa-pencil-alt"></i></div><h3 className="text-xl font-bold text-gray-700">Ayo Menebalkan</h3></div>
+                                <div className="bg-pink-50 rounded-2xl p-4 border-2 border-pink-200 flex flex-col items-center gap-6">
+                                    <DrawingCanvas width={canvasSize.width} height={canvasSize.height} traceText={`${data.syllable}  ${data.syllable}`} penColor="#ec4899" fontSize={80} />
+                                    <DrawingCanvas width={canvasSize.width} height={canvasSize.height} traceText={`${data.syllable}  ${data.syllable}`} penColor="#ec4899" fontSize={80} />
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-2"><div className="bg-blue-500 text-white p-2 rounded-lg shadow"><i className="fas fa-edit"></i></div><h3 className="text-xl font-bold text-gray-700">Menulis & Dikte</h3></div>
+                                <div className="bg-blue-50 rounded-2xl p-4 border-2 border-blue-200 grid grid-cols-3 gap-3 justify-items-center">
+                                    {Array(6).fill(0).map((_, i) => <DrawingCanvas key={i} width={dikteSize.width} height={dikteSize.height} penColor="#2563eb" className="shadow-md" />)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ReflectionScreen = ({ onBack, voiceIndex }) => {
+            const [pages, setPages] = useState([]); const [currentIndex, setCurrentIndex] = useState(0);
+            useEffect(() => { const shuffled = [...reflectionDataRaw].sort(() => 0.5 - Math.random()); setPages(shuffled.slice(0, 3)); }, []);
+            if (pages.length === 0) return null;
+            const currentData = pages[currentIndex];
+            return (
+                <div className="h-full flex flex-col bg-purple-50">
+                    <div className="flex items-center justify-between p-4 bg-white shadow-sm sticky top-0 z-20">
+                        <button onClick={onBack} className="bg-red-500 text-white w-10 h-10 rounded-full shadow"><i className="fas fa-arrow-left"></i></button>
+                        <h1 className="text-2xl font-bold text-gray-700">REFLEKSI BACA</h1>
+                        <span className="font-bold text-purple-600 bg-purple-100 px-3 py-1 rounded-lg">{currentIndex + 1}/3</span>
+                    </div>
+                    <div className="flex-1 flex flex-col justify-center p-6 max-w-2xl mx-auto w-full">
+                        <div className="bg-white p-8 rounded-3xl shadow-xl border-t-8 border-purple-400 space-y-6">
+                            {currentData.map((sentence, idx) => (
+                                <div key={idx} onClick={() => speak(sentence, voiceIndex)} className="text-2xl font-medium text-gray-800 border-b pb-3 pl-4 cursor-pointer hover:bg-purple-50 rounded transition flex items-start gap-3">
+                                    <span className="text-sm font-bold text-gray-300 mt-2">{idx+1}</span>{sentence}
+                                </div>
+                            ))}
+                        </div>
+                        <button onClick={() => currentIndex < 2 ? setCurrentIndex(i => i+1) : onBack()} className="mt-8 bg-purple-600 text-white font-bold py-4 rounded-xl shadow-lg w-full text-xl uppercase">
+                            {currentIndex === 2 ? "Selesai" : "Berikutnya"} <i className="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [currentScreen, setCurrentScreen] = useState('menu'); 
+            const [selectedSyllable, setSelectedSyllable] = useState(null);
+            const [showSettings, setShowSettings] = useState(false);
+            const [voiceIndex, setVoiceIndex] = useState(parseInt(localStorage.getItem('bacalisVoiceIndex')) || 0);
+
+            useEffect(() => { localStorage.setItem('bacalisVoiceIndex', voiceIndex); }, [voiceIndex]);
+            useEffect(() => { const loadV = () => window.speechSynthesis.getVoices(); loadV(); window.speechSynthesis.onvoiceschanged = loadV; }, []);
+
+            const renderScreen = () => {
+                switch(currentScreen) {
+                    case 'menu': return (
+                        <div className="h-full flex flex-col items-center justify-center p-6 bg-gradient-to-b from-rose-400 to-orange-400 relative">
+                            <button onClick={() => setShowSettings(true)} className="absolute top-6 right-6 bg-white/20 p-3 rounded-full text-white backdrop-blur-md transition hover:bg-white/40"><i className="fas fa-cog text-2xl"></i></button>
+                            <div className="text-center mb-10 animate-pop">
+                                <h1 className="text-7xl font-black text-white drop-shadow-md font-hand mb-2" style={{textShadow: '4px 4px 0 #3b82f6'}}>BACALIS</h1>
+                                <div className="bg-white/20 backdrop-blur-sm px-6 py-2 rounded-full inline-block"><p className="text-white font-bold text-lg tracking-wide uppercase">Belajar Baca & Tulis</p></div>
+                                <div className="mt-3"><span className="bg-yellow-400 text-yellow-900 px-4 py-1 rounded-full text-sm font-black uppercase shadow-md border-2 border-white/50">Level 2</span></div>
+                            </div>
+                            
+                            {showSettings && (
+                                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/50 backdrop-blur-sm">
+                                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+                                        <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold text-gray-700">Pilih Suara Kakak</h3><button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-red-500 text-2xl"><i className="fas fa-times-circle"></i></button></div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {[ {l:'Kakak 1', i:'👩'}, {l:'Kakak 2', i:'👩‍🦰'}, {l:'Kakak 3', i:'👨'}, {l:'Kakak 4', i:'👨‍🦱'} ].map((v, i) => (
+                                                <button key={i} onClick={() => { setVoiceIndex(i); speak('Halo, saya Kakak nomor ' + (i+1), i); }}
+                                                    className={`p-4 rounded-2xl flex flex-col items-center gap-2 border-4 transition-all ${voiceIndex === i ? 'border-indigo-400 bg-indigo-50 scale-105 shadow-md' : 'border-transparent bg-gray-50 opacity-60'}`}>
+                                                    <span className="text-4xl">{v.i}</span><span className="font-bold text-xs uppercase">{v.l}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <button onClick={() => setShowSettings(false)} className="w-full mt-6 bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg transition active:scale-95">Selesai</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
+                                <MenuCard title="MENGENAL ABJAD" subtitle="Huruf A - Z" color="from-cyan-400 to-blue-500" icon="fa-font" onClick={() => setCurrentScreen('alphabet')} />
+                                <MenuCard title="HURUF VOKAL" subtitle="A I U E O" color="from-yellow-400 to-red-500" icon="fa-star" onClick={() => setCurrentScreen('vowel')} />
+                                <MenuCard title="BACA SUKU KATA" subtitle="Bi - Ci - Di" color="from-yellow-400 to-green-600" icon="fa-book-reader" onClick={() => setCurrentScreen('syllableMenu')} />
+                                <MenuCard title="REFLEKSI BACA" subtitle="Latihan Kalimat" color="from-blue-400 to-indigo-600" icon="fa-brain" onClick={() => setCurrentScreen('reflection')} />
+                            </div>
+                        </div>
+                    );
+                    case 'alphabet': return <AlphabetScreen voiceIndex={voiceIndex} onBack={() => setCurrentScreen('menu')} filterVowel={false} />;
+                    case 'vowel': return <AlphabetScreen voiceIndex={voiceIndex} onBack={() => setCurrentScreen('menu')} filterVowel={true} />;
+                    case 'syllableMenu': return <SyllableMenu onBack={() => setCurrentScreen('menu')} onSelect={(item) => { setSelectedSyllable(item); setCurrentScreen('syllableLesson'); }} />;
+                    case 'syllableLesson': return <SyllableLesson voiceIndex={voiceIndex} data={selectedSyllable} onBack={() => setCurrentScreen('syllableMenu')} />;
+                    case 'reflection': return <ReflectionScreen voiceIndex={voiceIndex} onBack={() => setCurrentScreen('menu')} />;
+                }
+            };
+            return <div className="h-screen w-full overflow-hidden relative">{renderScreen()}</div>;
+        };
+
+        const SyllableMenu = ({ onBack, onSelect }) => (
+            <div className="h-full flex flex-col">
+                <div className="flex items-center justify-between p-4 bg-white shadow-sm sticky top-0 z-20">
+                    <button onClick={onBack} className="bg-red-500 text-white w-10 h-10 rounded-full shadow"><i className="fas fa-arrow-left"></i></button>
+                    <h1 className="text-2xl font-bold text-gray-700 uppercase">Pilih Pelajaran</h1><div className="w-10"></div>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 bg-green-50">
+                    <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+                        {syllableData.map(item => (
+                            <div key={item.id} onClick={() => onSelect(item)} className="bg-white rounded-xl shadow-md p-4 flex flex-col items-center justify-center cursor-pointer border-b-4 border-green-500 transition active:translate-y-1">
+                                <span className="text-4xl font-black text-gray-700 uppercase mb-1">{item.syllable}</span>
+                                <span className="text-sm text-gray-500 capitalize">{item.word}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+
+        const MenuCard = ({ title, subtitle, color, icon, onClick }) => (
+            <button onClick={onClick} className={`relative overflow-hidden group bg-gradient-to-br ${color} rounded-3xl p-6 text-left shadow-xl transform transition hover:scale-105 active:scale-95 border-b-8 border-black/10 flex items-center justify-between`}>
+                <div className="z-10"><h2 className="text-2xl font-black text-white mb-1 drop-shadow-sm uppercase">{title}</h2><p className="text-white/90 font-medium">{subtitle}</p></div>
+                <div className="z-10 bg-white/20 p-4 rounded-full backdrop-blur-sm"><i className={`fas ${icon} text-3xl text-white`}></i></div>
+                <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+            </button>
+        );
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
