@@ -30,20 +30,35 @@
 
         // --- GLOBAL UTILS ---
         const speak = (text, voiceIndex = 0) => {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                let phoneticText = text.toLowerCase().replace(/c/g, 'ch');
-                const utterance = new SpeechSynthesisUtterance(phoneticText);
-                utterance.lang = 'id-ID';
-                utterance.rate = 0.8;
-                const voices = window.speechSynthesis.getVoices();
-                const idVoices = voices.filter(v => v.lang.includes('id') || v.lang.includes('ID'));
-                if (idVoices.length > 0) {
-                    utterance.voice = idVoices[voiceIndex] || idVoices[0];
-                }
-                window.speechSynthesis.speak(utterance);
-            }
-        };
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        
+        let phoneticText = text.toLowerCase();
+
+        // --- PERBAIKAN LOGIKA HURUF C ---
+        if (phoneticText === 'c') {
+            // Jika hanya huruf "C" sendirian (Menu Abjad), paksa baca "Ce"
+            phoneticText = 'ce'; 
+        } else {
+            // Jika kata-kata (Menu Suku Kata), ganti 'c' menjadi 'ch' 
+            // Supaya 'cabe' dibaca 'chabe' (benar), bukan 'kabe'
+            phoneticText = phoneticText.replace(/c/g, 'ch');
+        }
+        
+        const utterance = new SpeechSynthesisUtterance(phoneticText);
+        utterance.lang = 'id-ID';
+        utterance.rate = 0.8;
+
+        const voices = window.speechSynthesis.getVoices();
+        const idVoices = voices.filter(v => v.lang.includes('id') || v.lang.includes('ID'));
+
+        if (idVoices.length > 0) {
+            utterance.voice = idVoices[voiceIndex] || idVoices[0];
+        }
+
+        window.speechSynthesis.speak(utterance);
+    }
+};
 
         // --- DATA ---
         const alphabetData = Array.from({ length: 26 }, (_, i) => ({
@@ -76,10 +91,27 @@
             { id: 'za', syllable: 'za', word: 'zaitun',image: null, emoji: '🫒', pattern: [['za', 'za'], ['ya', 'za'], ['za', 'xa'], ['wa', 'za'], ['za', 'va'], ['ta', 'za'], ['za', 'ya', 'xa'], ['wa', 'va', 'za']] },
         ];
 
-        const reflectionDataRaw = [
-            ["saya suka baca", "ada gula jawa", "mama beli sate", "itu bola budi", "papi bawa kado"],
-            ["kaki saya luka", "ini jari lima", "baju baru biru", "cuci muka dulu", "gigi saya rata"],
-            ["sapi lari pagi", "kuda makan padi", "rusa lari laju", "burung dara terbang", "ayam jago berkokok"]
+                const reflectionDataRaw = [
+            ["nama saya raka", "mama saya sasa", "papa saya jaka", "saya kaya raya", "maka bawa dana"],
+            ["baca kata saja", "baca cara jaya", "baca kata apa", "kaca mata baca", "baca data saja"],
+            ["ada kaca mata", "bawa bata saja", "ada lada lara", "maka ada kaca", "kaka bawa bata"],
+            ["rasa lada apa", "rasa paha papa", "ada rasa apa", "lara rasa dada", "rata rata saja"],
+            ["mama papa kaka", "kaka jaga mama", "papa bawa apa", "mama ada dana", "kaka sapa papa"],
+            ["gaga jaga gaza", "jaga jala jala", "lala jaga naga", "naga jaga nana", "laba laba lala"],
+            ["dada saya rata", "data nama saya", "dana dari mana", "pada masa apa", "dada dada saja"],
+            ["haha haha haha", "wawa bawa baja", "hawa pada kaca", "wawa bawa waja", "hama pada kaca"],
+            ["jaka jaga jala", "jaya raya saja", "jala baja jala", "jaka jaya raya", "jaga jaga jala"],
+            ["kata kaka saya", "kaca mata kaca", "kaya raya kaka", "kaka kata apa", "kata kata saja"],
+            ["lama lama lara", "lala lada apa", "lada rasa apa", "laba laba lama", "lala lada lara"],
+            ["mata mama saya", "mana mata kaka", "masa mama mana", "maka mama sapa", "mata mata mata"],
+            ["nama nana naya", "naga naga nana", "nana nama saya", "nada nada nana", "nana nama naya"],
+            ["papa paha rata", "para raja jaya", "paha papa mana", "papa bawa paha", "paha paha saja"],
+            ["raja rasa apa", "rata rata rasa", "raja kaya raya", "rasa rasa saja", "rara rasa dada"],
+            ["saya sama sasa", "sasa sama saya", "sana sama rata", "sapa saya saja", "saya sapa sasa"],
+            ["tata tawa saja", "tata bawa bata", "tara tawa tawa", "mata tata taja", "rata rata tata"],
+            ["yaya kaya raya", "yaya sapa zaza", "zaza jaga yaya", "yaya bawa apa", "zaza ada saja"],
+            ["apa ada dana", "mana kaca mata", "sapa nama kaka", "apa kata mama", "mana paha papa"],
+            ["baca kata saja", "bawa bata sana", "jaga mata saya", "sapa mama papa", "baca data nama"]
         ];
 
         // --- COMPONENTS ---
@@ -141,27 +173,58 @@
         };
 
         const AlphabetScreen = ({ onBack, filterVowel, voiceIndex }) => {
-            const data = filterVowel ? alphabetData.filter(i => i.isVowel) : alphabetData;
-            return (
-                <div className="h-full flex flex-col">
-                    <div className="flex items-center justify-between p-4 bg-white shadow-sm sticky top-0 z-20">
-                        <button onClick={onBack} className="bg-red-500 text-white w-10 h-10 rounded-full shadow-lg hover:bg-red-600"><i className="fas fa-arrow-left"></i></button>
-                        <h1 className="text-2xl font-bold text-gray-700">{filterVowel ? "BELAJAR VOKAL" : "BELAJAR ABJAD"}</h1><div className="w-10"></div>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4 bg-blue-50">
-                        <div className="flex flex-wrap justify-center gap-4">
-                            {data.map(item => (
-                                <div key={item.char} onClick={() => speak(item.char.toLowerCase(), voiceIndex)}
-                                    className={`w-[calc(50%-1rem)] md:w-40 aspect-square rounded-2xl flex flex-col items-center justify-center shadow-lg cursor-pointer transform transition hover:scale-105 active:scale-95 ${item.isVowel ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 text-white' : 'bg-white text-blue-600'}`}>
-                                    <span className="text-6xl md:text-7xl font-black drop-shadow-md">{item.char}</span>
-                                    {item.isVowel && <span className="text-xs font-bold bg-white text-yellow-600 px-2 py-1 rounded-full mt-2 uppercase">Vokal</span>}
-                                </div>
-                            ))}
+    // Data huruf
+    const data = filterVowel 
+        ? [
+            {char: 'A', isVowel: true}, {char: 'I', isVowel: true},
+            {char: 'U', isVowel: true}, {char: 'E', isVowel: true},
+            {char: 'O', isVowel: true}
+          ]
+        : alphabetData;
+
+    return (
+        <div className="h-full flex flex-col">
+            <div className="flex items-center justify-between p-4 bg-white shadow-sm sticky top-0 z-20">
+                <button onClick={onBack} className="bg-red-500 text-white w-10 h-10 rounded-full shadow-lg hover:bg-red-600 active:scale-95 transition-transform">
+                    <i className="fas fa-arrow-left"></i>
+                </button>
+                <h1 className="text-2xl font-bold text-gray-700">
+                    {filterVowel ? "BELAJAR VOKAL" : "BELAJAR ABJAD"}
+                </h1>
+                <div className="w-10"></div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 bg-blue-50">
+                {/* LOGIKA POSISI:
+                   - flex-wrap: Agar tombol turun ke bawah jika tidak muat.
+                   - justify-center: Agar tombol yang tersisa (O) otomatis ke tengah.
+                   - gap-4: Jarak antar tombol.
+                */}
+                <div className="flex flex-wrap justify-center gap-4">
+                    {data.map(item => (
+                        <div 
+                            key={item.char}
+                            onClick={() => speak(item.char.toLowerCase(), voiceIndex)}
+                            className={`
+                                /* LOGIKA LEBAR TOMBOL: */
+                                /* Jika Vokal (A-O), lebar 45% (agar muat 2 per baris: A-I, U-E, O sendiri). */
+                                /* Jika Abjad (A-Z), lebar lebih kecil agar muat banyak. */
+                                ${filterVowel ? 'w-[42%]' : 'w-[28%] md:w-[15%]'} 
+                                
+                                aspect-square rounded-2xl flex flex-col items-center justify-center shadow-lg cursor-pointer
+                                transform transition hover:scale-105 active:scale-95
+                                ${item.isVowel ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 text-white' : 'bg-white text-blue-600'}
+                            `}
+                        >
+                            <span className="text-6xl md:text-7xl font-black drop-shadow-md">{item.char}</span>
+                            {item.isVowel && <span className="text-xs font-bold bg-white text-yellow-600 px-2 py-1 rounded-full mt-2 uppercase">VOKAL</span>}
                         </div>
-                    </div>
+                    ))}
                 </div>
-            );
-        };
+            </div>
+        </div>
+    );
+};
 
         const SyllableLesson = ({ data, onBack, voiceIndex }) => {
             useEffect(() => { speak(`${data.syllable}. ${data.word}`, voiceIndex); }, [data, voiceIndex]);
