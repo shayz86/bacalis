@@ -3,165 +3,236 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BACALIS - Belajar Baca & Tulis</title>
+    <title>BACALIS - Petualangan Huruf</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Fredoka', sans-serif;
-            background-color: #f0f9ff;
-            background-image: radial-gradient(#bae6fd 2px, transparent 2px);
-            background-size: 32px 32px;
+            font-family: 'Quicksand', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+            background: linear-gradient(to bottom, #e0f7fa, #ffffff);
+            min-height: 100vh;
         }
+
+        .font-fredoka { font-family: 'Fredoka One', cursive; }
+
+        /* --- Animasi Background --- */
+        .bg-animation {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .floating-char {
+            position: absolute;
+            font-family: 'Fredoka One', cursive;
+            user-select: none;
+            animation: floatUp linear infinite;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.4; }
+            90% { opacity: 0.4; }
+            100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* --- Animasi Judul --- */
+        .title-letter {
+            display: inline-block;
+            font-size: 5rem;
+            animation: titleBounce 2s infinite ease-in-out;
+            text-shadow: 2px 2px 0px #fff, 4px 4px 0px rgba(0,0,0,0.1), 6px 6px 0px var(--shadow-color);
+        }
+        @keyframes titleBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .letter-b { --shadow-color: #FF6B6B; color: #FF8E8E; animation-delay: 0.0s; }
+        .letter-a1 { --shadow-color: #4ECDC4; color: #72E2DB; animation-delay: 0.1s; }
+        .letter-c { --shadow-color: #FFD93D; color: #FFE66D; animation-delay: 0.2s; }
+        .letter-a2 { --shadow-color: #6BCB77; color: #91D18B; animation-delay: 0.3s; }
+        .letter-l { --shadow-color: #4D96FF; color: #7EB1FF; animation-delay: 0.4s; }
+        .letter-i { --shadow-color: #F473B9; color: #FF9BCF; animation-delay: 0.5s; }
+        .letter-s { --shadow-color: #FF8E00; color: #FFAA33; animation-delay: 0.6s; }
+
+        /* --- Kartu Level & Squishy --- */
         .level-card {
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-bottom: 12px solid rgba(0,0,0,0.1);
+            cursor: pointer;
         }
-        .level-card:active {
-            transform: scale(0.95);
+        .level-card:hover { transform: translateY(-10px) scale(1.05); }
+        .level-card:active { transform: translateY(4px) scale(0.95); border-bottom-width: 4px; }
+        .level-card:hover .icon-box { animation: iconJump 0.6s infinite alternate ease-in-out; }
+        @keyframes iconJump {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-20px) scale(1.1); }
         }
-        /* Animasi mengambang halus untuk judul */
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
+
+        /* --- Install Popup Styles --- */
+        #install-modal {
+            display: none; /* Awalnya sembunyi */
+            transition: opacity 0.3s ease;
         }
-        .animate-float {
-            animation: float 3s ease-in-out infinite;
+        .modal-bounce {
+            animation: modalPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes modalPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .glass-bg {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.5);
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
+<body>
 
-    <!-- Container Utama -->
-    <div class="w-full max-w-md bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border-4 border-sky-200 overflow-hidden">
-        
-        <!-- Header -->
-        <div class="bg-sky-400 p-6 text-center rounded-b-[2.5rem] shadow-md relative z-10">
-            <div class="animate-float inline-block">
-                <i class="fas fa-book-open text-white text-5xl mb-2"></i>
+    <!-- Animasi Background -->
+    <div id="bg-animation" class="bg-animation"></div>
+
+    <!-- Popup Instalasi -->
+    <div id="install-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+        <div class="glass-bg p-8 rounded-[40px] max-w-sm w-full text-center shadow-2xl modal-bounce border-t-8 border-orange-400">
+            <div class="text-7xl mb-4">📱</div>
+            <h2 class="font-fredoka text-3xl text-orange-600 mb-2">Pasang BACALIS</h2>
+            <p class="text-gray-700 font-bold mb-6">Ingin belajar lebih mudah? Ayo pasang aplikasi di layar HP kamu!</p>
+            <div class="flex flex-col gap-3">
+                <button id="btn-install" class="bg-orange-500 hover:bg-orange-600 text-white font-fredoka py-4 px-6 rounded-2xl text-xl shadow-lg transform transition active:scale-95">
+                    PASANG SEKARANG
+                </button>
+                <button id="btn-close" class="text-gray-500 font-bold py-2 hover:text-gray-700 transition">
+                    Nanti Saja
+                </button>
             </div>
-            <h1 class="text-4xl font-bold text-white tracking-wide text-shadow-sm">BACALIS</h1>
-            <p class="text-sky-100 font-medium text-lg mt-1">Belajar Baca & Tulis</p>
-        </div>
-
-        <!-- Konten Level -->
-        <div class="p-6 pb-8">
-            <h2 class="text-center text-slate-600 font-bold text-xl mb-6">Pilih Level Belajarmu! 🚀</h2>
-            
-            <div class="grid gap-4">
-                
-                <!-- Level 1 -->
-                <a href="./level1" class="level-card group block relative overflow-hidden bg-white rounded-2xl border-2 border-red-200 shadow-sm hover:shadow-md hover:border-red-400">
-                    <div class="absolute right-0 top-0 w-16 h-16 bg-red-100 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
-                    <div class="flex items-center p-4 relative z-10">
-                        <div class="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-sm">1</div>
-                        <div class="ml-4 flex-1">
-                            <h3 class="font-bold text-red-600 text-lg">Membaca Suku Kata A</h3>
-                            <p class="text-xs text-gray-500">Suku Kata dan Kata Berakhiran Vokal A</p>
-                        </div>
-                        <i class="fas fa-chevron-right text-red-300"></i>
-                    </div>
-                </a>
-
-                <!-- Level 2 -->
-                <a href="./level2" class="level-card group block relative overflow-hidden bg-white rounded-2xl border-2 border-orange-200 shadow-sm hover:shadow-md hover:border-orange-400">
-                    <div class="absolute right-0 top-0 w-16 h-16 bg-orange-100 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
-                    <div class="flex items-center p-4 relative z-10">
-                        <div class="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-sm">2</div>
-                        <div class="ml-4 flex-1">
-                            <h3 class="font-bold text-orange-600 text-lg">Suku Kata</h3>
-                            <p class="text-xs text-gray-500">Ba, Bi, Bu, Be, Bo</p>
-                        </div>
-                        <i class="fas fa-chevron-right text-orange-300"></i>
-                    </div>
-                </a>
-
-                <!-- Level 3 -->
-                <a href="./level3" class="level-card group block relative overflow-hidden bg-white rounded-2xl border-2 border-yellow-200 shadow-sm hover:shadow-md hover:border-yellow-400">
-                    <div class="absolute right-0 top-0 w-16 h-16 bg-yellow-100 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
-                    <div class="flex items-center p-4 relative z-10">
-                        <div class="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-sm">3</div>
-                        <div class="ml-4 flex-1">
-                            <h3 class="font-bold text-yellow-600 text-lg">Kata Sederhana</h3>
-                            <p class="text-xs text-gray-500">Buku, Meja, Bola</p>
-                        </div>
-                        <i class="fas fa-chevron-right text-yellow-300"></i>
-                    </div>
-                </a>
-
-                <!-- Level 4 -->
-                <a href="./level4" class="level-card group block relative overflow-hidden bg-white rounded-2xl border-2 border-green-200 shadow-sm hover:shadow-md hover:border-green-400">
-                    <div class="absolute right-0 top-0 w-16 h-16 bg-green-100 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
-                    <div class="flex items-center p-4 relative z-10">
-                        <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-sm">4</div>
-                        <div class="ml-4 flex-1">
-                            <h3 class="font-bold text-green-600 text-lg">Kalimat Pendek</h3>
-                            <p class="text-xs text-gray-500">Ibu pergi ke pasar</p>
-                        </div>
-                        <i class="fas fa-chevron-right text-green-300"></i>
-                    </div>
-                </a>
-
-                <!-- Level 5 -->
-                <a href="./level5" class="level-card group block relative overflow-hidden bg-white rounded-2xl border-2 border-teal-200 shadow-sm hover:shadow-md hover:border-teal-400">
-                    <div class="absolute right-0 top-0 w-16 h-16 bg-teal-100 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
-                    <div class="flex items-center p-4 relative z-10">
-                        <div class="w-12 h-12 bg-teal-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-sm">5</div>
-                        <div class="ml-4 flex-1">
-                            <h3 class="font-bold text-teal-600 text-lg">Tanda Baca</h3>
-                            <p class="text-xs text-gray-500">Titik, Koma, Tanya</p>
-                        </div>
-                        <i class="fas fa-chevron-right text-teal-300"></i>
-                    </div>
-                </a>
-
-                <!-- Level 6 -->
-                <a href="./level6" class="level-card group block relative overflow-hidden bg-white rounded-2xl border-2 border-blue-200 shadow-sm hover:shadow-md hover:border-blue-400">
-                    <div class="absolute right-0 top-0 w-16 h-16 bg-blue-100 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
-                    <div class="flex items-center p-4 relative z-10">
-                        <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-sm">6</div>
-                        <div class="ml-4 flex-1">
-                            <h3 class="font-bold text-blue-600 text-lg">Paragraf</h3>
-                            <p class="text-xs text-gray-500">Membaca cerita mini</p>
-                        </div>
-                        <i class="fas fa-chevron-right text-blue-300"></i>
-                    </div>
-                </a>
-
-                <!-- Level 7 -->
-                <a href="./level7" class="level-card group block relative overflow-hidden bg-white rounded-2xl border-2 border-purple-200 shadow-sm hover:shadow-md hover:border-purple-400">
-                    <div class="absolute right-0 top-0 w-16 h-16 bg-purple-100 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
-                    <div class="flex items-center p-4 relative z-10">
-                        <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-sm">7</div>
-                        <div class="ml-4 flex-1">
-                            <h3 class="font-bold text-purple-600 text-lg">Cerita Pendek</h3>
-                            <p class="text-xs text-gray-500">Pemahaman bacaan</p>
-                        </div>
-                        <i class="fas fa-chevron-right text-purple-300"></i>
-                    </div>
-                </a>
-
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="bg-slate-50 p-4 text-center border-t border-slate-100">
-            <p class="text-slate-400 text-sm">© 2026 BACALIS App by Esel Store</p>
         </div>
     </div>
 
-    <!-- Script sederhana untuk menangani error jika folder belum ada (Hanya untuk Demo Preview) -->
+    <div class="container mx-auto px-4 py-12 relative z-10">
+        <!-- Header -->
+        <header class="text-center mb-16">
+            <div class="inline-flex gap-1 font-fredoka mb-6">
+                <span class="title-letter letter-b">B</span>
+                <span class="title-letter letter-a1">A</span>
+                <span class="title-letter letter-c">C</span>
+                <span class="title-letter letter-a2">A</span>
+                <span class="title-letter letter-l">L</span>
+                <span class="title-letter letter-i">I</span>
+                <span class="title-letter letter-s">S</span>
+            </div>
+            <div class="flex justify-center">
+                <p class="text-xl md:text-2xl text-blue-800 font-bold bg-white/60 px-8 py-3 rounded-full border-2 border-white shadow-sm">
+                    Ayo Belajar Sambil Bermain! ✨
+                </p>
+            </div>
+        </header>
+
+        <!-- Grid Levels -->
+        <main class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
+            <a href="level1/index.html" class="level-card glass-bg rounded-[45px] p-8 text-center" style="border-color: #FF8E8E;">
+                <div class="icon-box text-8xl mb-4">🍎</div>
+                <h3 class="text-3xl font-fredoka text-red-500">Level 1</h3>
+                <p class="text-gray-600 font-bold mt-2">Mengenal Huruf</p>
+            </a>
+            <a href="level2/index.html" class="level-card glass-bg rounded-[45px] p-8 text-center" style="border-color: #72E2DB;">
+                <div class="icon-box text-8xl mb-4">🐶</div>
+                <h3 class="text-3xl font-fredoka text-teal-500">Level 2</h3>
+                <p class="text-gray-600 font-bold mt-2">Suku Kata A-I-U</p>
+            </a>
+            <a href="level3/index.html" class="level-card glass-bg rounded-[45px] p-8 text-center" style="border-color: #FFE66D;">
+                <div class="icon-box text-8xl mb-4">🚗</div>
+                <h3 class="text-3xl font-fredoka text-yellow-600">Level 3</h3>
+                <p class="text-gray-600 font-bold mt-2">Membaca Kata</p>
+            </a>
+            <a href="level4/index.html" class="level-card glass-bg rounded-[45px] p-8 text-center" style="border-color: #91D18B;">
+                <div class="icon-box text-8xl mb-4">✏️</div>
+                <h3 class="text-3xl font-fredoka text-green-500">Level 4</h3>
+                <p class="text-gray-600 font-bold mt-2">Belajar Menulis</p>
+            </a>
+            <a href="level5/index.html" class="level-card glass-bg rounded-[45px] p-8 text-center" style="border-color: #7EB1FF;">
+                <div class="icon-box text-8xl mb-4">🔢</div>
+                <h3 class="text-3xl font-fredoka text-blue-500">Level 5</h3>
+                <p class="text-gray-600 font-bold mt-2">Mengenal Angka</p>
+            </a>
+            <a href="level6/index.html" class="level-card glass-bg rounded-[45px] p-8 text-center" style="border-color: #FF9BCF;">
+                <div class="icon-box text-8xl mb-4">🚀</div>
+                <h3 class="text-3xl font-fredoka text-pink-500">Level 6</h3>
+                <p class="text-gray-600 font-bold mt-2">Berhitung Ceria</p>
+            </a>
+        </main>
+
+        <!-- Footer -->
+        <footer class="text-center mt-20 text-blue-900/70">
+            <p class="text-lg font-bold">Dibuat dengan ❤️ untuk Anak Indonesia</p>
+            <p class="text-sm mt-1 font-fredoka opacity-80">&copy; 2026 BACALIS</p>
+        </footer>
+    </div>
+
     <script>
-        // Catatan: Script ini hanya opsional untuk memberi tahu pengguna saat preview
-        // bahwa folder tujuan belum dibuat. Di aplikasi nyata, kode ini bisa dihapus.
-        document.querySelectorAll('a').forEach(link => {
-            link.addEventListener('click', function(e) {
-                // Di lingkungan preview browser/chatbot, link relatif mungkin tidak bekerja
-                // jika folder tidak benar-benar ada.
-                console.log(`Navigasi ke: ${this.getAttribute('href')}`);
-            });
+        /* --- Logika Install PWA --- */
+        let deferredPrompt;
+        const modal = document.getElementById('install-modal');
+        const btnInstall = document.getElementById('btn-install');
+        const btnClose = document.getElementById('btn-close');
+
+        // Deteksi apakah aplikasi bisa diinstal
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Cegah browser menampilkan prompt bawaan secara otomatis
+            e.preventDefault();
+            deferredPrompt = e;
+            // Tampilkan popup kustom kita setelah 2 detik aplikasi dibuka
+            setTimeout(() => {
+                modal.style.display = 'flex';
+            }, 2000);
         });
+
+        btnInstall.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('User memasang aplikasi');
+                }
+                deferredPrompt = null;
+                modal.style.display = 'none';
+            } else {
+                // Pesan simulasi jika tidak di perangkat yang mendukung (Desktop/Browser Preview)
+                alert("Gunakan browser Chrome di Android untuk mencoba fitur instalasi ini!");
+                modal.style.display = 'none';
+            }
+        });
+
+        btnClose.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        /* --- Animasi Background --- */
+        const bgContainer = document.getElementById('bg-animation');
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('');
+        const colors = ['#FF6B6B', '#4ECDC4', '#FFD93D', '#6BCB77', '#4D96FF', '#F473B9'];
+
+        function createFloatingChar() {
+            const char = document.createElement('div');
+            const randomChar = characters[Math.floor(Math.random() * characters.length)];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            char.className = 'floating-char';
+            char.innerText = randomChar;
+            char.style.left = Math.random() * 100 + 'vw';
+            const size = Math.random() * (50 - 20) + 20;
+            char.style.fontSize = size + 'px';
+            char.style.color = randomColor;
+            const duration = Math.random() * (15 - 8) + 8;
+            char.style.animationDuration = duration + 's';
+            bgContainer.appendChild(char);
+            setTimeout(() => { char.remove(); }, duration * 1000);
+        }
+        setInterval(createFloatingChar, 700);
     </script>
 </body>
 </html>
