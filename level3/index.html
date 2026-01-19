@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bacalis - Belajar Baca Tulis (Space Theme)</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+
+    <style>
+        /* Latar belakang gelap seperti luar angkasa */
+        body { 
+            font-family: 'Fredoka', sans-serif; 
+            background-color: #0f172a; /* Slate 900 */
+            color: #f1f5f9; /* Slate 100 text */
+            overscroll-behavior: none; user-select: none; -webkit-user-select: none; 
+            /* Efek bintang sederhana */
+            background-image: radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 2px),
+            radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 1px),
+            radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 2px);
+            background-size: 550px 550px, 350px 350px, 250px 250px;
+            background-position: 0 0, 40px 60px, 130px 270px;
+        }
+        canvas { touch-action: none; cursor: crosshair; }
+        .font-hand { font-family: 'Patrick Hand', cursive; }
+        .animate-pop { animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes pop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        /* Warna aktif saat ditekan di latar gelap */
+        .pattern-grid div:active { transform: scale(0.95); background-color: #1e293b; /* Slate 800 */ }
+        .emoji-display { font-size: 8rem; line-height: 1; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- GLOBAL UTILS (TIDAK BERUBAH) ---
+        const speak = (text, voiceIndex = 0) => {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        
+        let phoneticText = text.toLowerCase();
+
+        // --- PERBAIKAN LOGIKA HURUF C ---
+        if (phoneticText === 'c') {
+            phoneticText = 'ce'; 
+        } else {
+            phoneticText = phoneticText.replace(/c/g, 'ch');
+        }
+        
+        const utterance = new SpeechSynthesisUtterance(phoneticText);
+        utterance.lang = 'id-ID';
+        utterance.rate = 0.8;
+
+        const voices = window.speechSynthesis.getVoices();
+        const idVoices = voices.filter(v => v.lang.includes('id') || v.lang.includes('ID'));
+
+        if (idVoices.length > 0) {
+            utterance.voice = idVoices[voiceIndex] || idVoices[0];
+        }
+
+        window.speechSynthesis.speak(utterance);
+    }
+};
+
+        // --- DATA (TETAP UTUH - TIDAK ADA PERUBAHAN) ---
+        const alphabetData = Array.from({ length: 26 }, (_, i) => ({
+            char: String.fromCharCode(65 + i),
+            isVowel: ['A', 'I', 'U', 'E', 'O'].includes(String.fromCharCode(65 + i))
+        }));
+
+        const syllableData = [
+    { id: 'aiu', syllable: 'a.i.u', word: 'unta', image: null, emoji: '🐪', pattern: [['ba', 'bi', 'bu'], ['ca', 'ci', 'cu'], ['da', 'di', 'du'], ['fa', 'fi', 'fu'], ['ga', 'gi', 'gu'], ['ha', 'hi', 'hu'], ['ja', 'ji', 'ju'], ['ka', 'ki', 'ku'], ['la', 'li', 'lu'], ['ma', 'mi', 'mu'], ['na', 'ni', 'nu'], ['pa', 'pi', 'pu'], ['qa', 'qi', 'qu'], ['ra', 'ri', 'ru'], ['sa', 'si', 'su'], ['ta', 'ti', 'tu'], ['va', 'vi', 'vu'], ['wa', 'wi', 'wu'], ['xa', 'xi', 'xu'], ['ya', 'yi', 'yu'], ['za', 'zi', 'zu']] },
+    { id: 'bu',  syllable: 'bu',  word: 'buku',   image: null, emoji: '📚', pattern: [['bu', 'ku'], ['i', 'bu'], ['ba', 'bu'], ['ba', 'bi'], ['bi', 'sa'], ['bi', 'na'], ['ba', 'zi'], ['bi', 'bu']] },
+    { id: 'cu',  syllable: 'cu',  word: 'cumi',   image: null, emoji: '🦑', pattern: [['cu', 'cu'], ['cu', 'ci'], ['cu', 'ka'], ['ba', 'ca'], ['ba', 'ci'], ['bi', 'cu'], ['cu', 'ma'], ['ca', 'zi']] },
+    { id: 'du',  syllable: 'du',  word: 'dadu',   image: null, emoji: '🎲', pattern: [['da', 'du'], ['du', 'a'], ['du', 'ri'], ['pa', 'di'], ['bu', 'di'], ['du', 'ka'], ['du', 'ni'], ['da', 'zi']] },
+    { id: 'fu',  syllable: 'fu',  word: 'fuji',   image: null, emoji: '🗻', pattern: [['fu', 'fu'], ['fa', 'ni'], ['fi', 'ra'], ['fi', 'da'], ['fi', 'sa'], ['fa', 'fu'], ['fu', 'si'], ['ba', 'fu']] },
+    { id: 'gu',  syllable: 'gu',  word: 'gula',   image: null, emoji: '🧂', pattern: [['gu', 'la'], ['gu', 'si'], ['gu', 'ru'], ['gu', 'ga'], ['ba', 'gu'], ['gi', 'gu'], ['ga', 'gu'], ['ba', 'zi']] },
+    { id: 'hu',  syllable: 'hu',  word: 'hujan',   image: null, emoji: '🌧️', pattern: [['hu', 'lu'], ['ba', 'hu'], ['su', 'hu'], ['da', 'hi'], ['ha', 'ri'], ['hu-ma'], ['ha-hu'], ['hi-hu']] },
+    { id: 'ju',  syllable: 'ju',  word: 'juara',   image: null, emoji: '🏆', pattern: [['ba', 'ju'], ['ma', 'ju'], ['ju', 'ka'], ['ju', 'ri'], ['bi', 'ji'], ['ja-ri'], ['ja-ji'], ['ji-ka']] },
+    { id: 'ku',  syllable: 'ku',  word: 'kuku',   image: null, emoji: '💅', pattern: [['ku', 'ku'], ['ka', 'ku'], ['ku', 'da'], ['ku', 'bu'], ['bu', 'ku'], ['sa', 'ku'], ['ka-ki'], ['ki-ku']] },
+    { id: 'lu',  syllable: 'lu',  word: 'palu',   image: null, emoji: '🔨', pattern: [['pa', 'lu'], ['lu', 'sa'], ['lu', 'lu'], ['la', 'lu'], ['bi', 'lu'], ['lu', 'ma'], ['la-ri'], ['li-ma']] },
+    { id: 'mu',  syllable: 'mu',  word: 'mulut',   image: null, emoji: '👄', pattern: [['mu', 'ka'], ['ka', 'mu'], ['mu', 'da'], ['mu', 'mi'], ['ma-mi'], ['mu-ra'], ['ka-mi'], ['mi-mu']] },
+    { id: 'nu',  syllable: 'nu',  word: 'nuri',   image: null, emoji: '🦜', pattern: [['nu', 'ri'], ['nu', 'na'], ['nu', 'ni'], ['ma', 'nu'], ['ba', 'nu'], ['pa', 'nu'], ['ni-na'], ['na-ni']] },
+    { id: 'pu',  syllable: 'pu',  word: 'sapu',   image: null, emoji: '🧹', pattern: [['sa', 'pu'], ['pu', 'ra'], ['pa', 'pu'], ['pi', 'pa'], ['sa-pi'], ['pu-pu'], ['pi-pu'], ['ra-pi']] },
+    { id: 'qu',  syllable: 'qu',  word: 'quran', image: null, emoji: '📖', pattern: [['qu', 'ra', 'ni'], ['qu', 'ta'], ['qu', 'ni'], ['qu', 'sa'], ['qa-qu'], ['qi-qu'], ['ba-qi'], ['qi-ra']] },
+    { id: 'ru',  syllable: 'ru',  word: 'rusa',   image: null, emoji: '🦌', pattern: [['ru', 'sa'], ['bi', 'ru'], ['ba', 'ru'], ['gu', 'ru'], ['da', 'ri'], ['ba', 'ri'], ['ri', 'bu'], ['da', 'ru']] },
+    { id: 'su',  syllable: 'su',  word: 'susu',   image: null, emoji: '🥛', pattern: [['su', 'su'], ['su', 'ka'], ['su', 'ri'], ['ba', 'su'], ['si-sa'], ['na-si'], ['ba-si'], ['su-si']] },
+    { id: 'tu',  syllable: 'tu',  word: 'batu',   image: null, emoji: '🪨', pattern: [['ba', 'tu'], ['sa', 'tu'], ['tu', 'ga'], ['tu', 'tu'], ['ti-ti'], ['ta-ti'], ['ma-ti'], ['pa-ti']] },
+    { id: 'vu',  syllable: 'vu',  word: 'vulkano',   image: null, emoji: '🌋', pattern: [['vu', 'vu'], ['va', 'vi'], ['vu', 'ra'], ['vu', 'ni'], ['ba', 'vu'], ['vi', 'vu'], ['va', 'vu'], ['bi', 'vu']] },
+    { id: 'wu',  syllable: 'wu',  word: 'wushu',  image: null, emoji: '🥋', pattern: [['wu', 'shu'], ['wa', 'wi'], ['wu', 'ra'], ['wu', 'ni'], ['ba', 'wu'], ['wi', 'wu'], ['wa', 'wu'], ['wu-sa']] },
+    { id: 'xu',  syllable: 'xu',  word: 'xuni',   image: null, emoji: '🏮', pattern: [['xu', 'ni'], ['xa', 'xi'], ['xu', 'ra'], ['xu', 'sa'], ['ba', 'xu'], ['xi', 'xu'], ['xa', 'xu'], ['ba-zi']] },
+    { id: 'yi',  syllable: 'yi',  word: 'yuyu',   image: null, emoji: '🦀', pattern: [['yu', 'yu'], ['sa', 'yu'], ['ka', 'yu'], ['ba', 'yi'], ['ya', 'yi'], ['yu', 'ma'], ['yu', 'da'], ['yu-ya']] },
+    { id: 'zu',  syllable: 'zu',  word: 'zuzu',   image: null, emoji: '🦓', pattern: [['zu', 'zu'], ['za', 'zi'], ['gi', 'zi'], ['ba', 'zu'], ['za', 'zu'], ['zi', 'zu'], ['zu', 'sa'], ['zu', 'ra']] },
+];
+
+        const reflectionDataRaw = [
+    ["buku baru ibu", "ibu suka buku", "buku biru baru", "baru satu buku", "buku biru satu"],
+    ["susu rani satu", "susu nani madu", "madu rasa susu", "satu susu baru", "nani suka susu"],
+    ["baju biru baru", "baju satu baru", "baru satu baju", "ibu bawa baju", "baju rani satu"],
+    ["kuku kaki satu", "satu kuku biru", "kuku baru nina", "kaki ada kuku", "kuku papa satu"],
+    ["madu rasa gula", "gula madu satu", "ibu suka madu", "madu nani baru", "satu madu baru"],
+    ["kura kura lari", "kura kura satu", "kura rani baru", "lari kura kura", "kura kura nani"],
+    ["guru nina baru", "satu guru rani", "guru suka buku", "buku guru satu", "nani sapa guru"],
+    ["saku baju nina", "satu saku biru", "saku baju satu", "baju ada saku", "saku rani baru"],
+    ["palu papa satu", "palu baru rani", "nina bawa palu", "satu palu baru", "palu papa ada"],
+    ["rusa lari satu", "lari rusa baru", "rusa rani satu", "satu rusa rani", "rusa nani lari"],
+    ["biru satu baju", "baju biru baru", "buku biru satu", "satu buku biru", "biru baju rani"],
+    ["gusi nina baru", "gusi rani ada", "satu gusi nina", "gusi papa satu", "gusi nani baru"],
+    ["duku nina satu", "duku rani baru", "satu duku rani", "duku nani ada", "ibu bawa duku"],
+    ["yuyu lari satu", "satu yuyu biru", "yuyu rani baru", "lari yuyu baru", "yuyu nani lari"],
+    ["tugu baru nina", "tugu rani satu", "satu tugu baru", "tugu nani ada", "papa bawa tugu"],
+    ["nani sapa bupa", "bupa bawa buku", "bupa suka satu", "satu bupa baru", "bupa baju biru"],
+    ["hulu baru nina", "hulu rani satu", "satu hulu baru", "hulu nani ada", "rani suka hulu"],
+    ["suhu baru nina", "suhu rani satu", "satu suhu baru", "suhu nani ada", "mama bawa suhu"],
+    ["satu dua tiga", "satu buku baru", "satu baju baru", "satu kuku baru", "satu duku baru"],
+    ["saya jadi bisa", "baca buku baru", "lari lari pagi", "hari hari jaya", "suka baca buku"]
+];
+
+        // --- COMPONENTS ---
+
+        // Canvas diubah agar cocok dengan tema gelap (background gelap, jejak putih)
+        const DrawingCanvas = ({ width, height, traceText, title, className, penColor = "#38bdf8", fontSize = 60 }) => {
+            const canvasRef = useRef(null);
+            const [isDrawing, setIsDrawing] = useState(false);
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = width * dpr; canvas.height = height * dpr;
+                canvas.style.width = `${width}px`; canvas.style.height = `${height}px`;
+                ctx.scale(dpr, dpr); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.lineWidth = 4;
+                if (traceText) {
+                    ctx.font = `bold ${fontSize}px 'Fredoka', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                    // Warna jejak diubah agar terlihat di background gelap
+                    ctx.fillStyle = "#334155"; ctx.strokeStyle = "#475569"; ctx.setLineDash([8, 8]); ctx.lineWidth = 3;
+                    ctx.fillText(traceText, width / 2, height / 2); ctx.strokeText(traceText, width / 2, height / 2);
+                    ctx.setLineDash([]); ctx.lineWidth = 5;
+                }
+            }, [width, height, traceText, fontSize]);
+
+            const getTouchPos = (canvas, evt) => {
+                const rect = canvas.getBoundingClientRect();
+                return { x: (evt.touches[0].clientX - rect.left), y: (evt.touches[0].clientY - rect.top) };
+            };
+            const startDrawing = (e) => {
+                const canvas = canvasRef.current; const ctx = canvas.getContext('2d');
+                ctx.strokeStyle = penColor; ctx.lineWidth = 5;
+                let x, y; if (e.nativeEvent.touches) { const pos = getTouchPos(canvas, e.nativeEvent); x = pos.x; y = pos.y; }
+                else { x = e.nativeEvent.offsetX; y = e.nativeEvent.offsetY; }
+                ctx.beginPath(); ctx.moveTo(x, y); setIsDrawing(true);
+            };
+            const draw = (e) => {
+                if (!isDrawing) return; const canvas = canvasRef.current; const ctx = canvas.getContext('2d');
+                let x, y; if (e.nativeEvent.touches) { const pos = getTouchPos(canvas, e.nativeEvent); x = pos.x; y = pos.y; }
+                else { x = e.nativeEvent.offsetX; y = e.nativeEvent.offsetY; }
+                ctx.lineTo(x, y); ctx.stroke();
+            };
+            const clearCanvas = () => {
+                const canvas = canvasRef.current; const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                if (traceText) {
+                    const dpr = window.devicePixelRatio || 1; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.scale(dpr, dpr);
+                    ctx.font = `bold ${fontSize}px 'Fredoka', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                    ctx.fillStyle = "#334155"; ctx.strokeStyle = "#475569"; ctx.setLineDash([8, 8]); ctx.lineWidth = 3;
+                    ctx.fillText(traceText, width/2, height/2); ctx.strokeText(traceText, width/2, height/2);
+                    ctx.setLineDash([]); ctx.strokeStyle = penColor; ctx.lineWidth = 5;
+                }
+            };
+            return (
+                <div className={`relative flex flex-col items-center ${className}`}>
+                    {/* Canvas background diubah jadi gelap */}
+                    <canvas ref={canvasRef} onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={() => setIsDrawing(false)}
+                        onMouseLeave={() => setIsDrawing(false)} onTouchStart={startDrawing} onTouchMove={draw}
+                        onTouchEnd={() => setIsDrawing(false)} className="bg-slate-900 rounded-xl shadow-sm border-2 border-dashed border-indigo-500/50 touch-none" />
+                    <button onClick={clearCanvas} className="absolute -top-3 -right-3 bg-red-600 text-white w-8 h-8 rounded-full text-sm shadow-md z-10 flex items-center justify-center transition-transform active:scale-95"><i className="fas fa-trash"></i></button>
+                </div>
+            );
+        };
+
+        const AlphabetScreen = ({ onBack, filterVowel, voiceIndex }) => {
+    const data = filterVowel 
+        ? [
+            {char: 'A', isVowel: true}, {char: 'I', isVowel: true},
+            {char: 'U', isVowel: true}, {char: 'E', isVowel: true},
+            {char: 'O', isVowel: true}
+          ]
+        : alphabetData;
+
+    return (
+        <div className="h-full flex flex-col">
+            {/* Header gelap */}
+            <div className="flex items-center justify-between p-4 bg-slate-800 shadow-sm sticky top-0 z-20 border-b border-slate-700">
+                <button onClick={onBack} className="bg-cyan-600 text-white w-10 h-10 rounded-full shadow-lg hover:bg-cyan-700 active:scale-95 transition-transform">
+                    <i className="fas fa-arrow-left"></i>
+                </button>
+                <h1 className="text-2xl font-bold text-white">
+                    {filterVowel ? "BELAJAR VOKAL" : "BELAJAR ABJAD"}
+                </h1>
+                <div className="w-10"></div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 bg-slate-950">
+                <div className="flex flex-wrap justify-center gap-4">
+                    {data.map(item => (
+                        <div 
+                            key={item.char}
+                            onClick={() => speak(item.char.toLowerCase(), voiceIndex)}
+                            className={`
+                                ${filterVowel ? 'w-[42%]' : 'w-[28%] md:w-[15%]'} 
+                                aspect-square rounded-2xl flex flex-col items-center justify-center shadow-lg cursor-pointer
+                                transform transition hover:scale-105 active:scale-95
+                                /* Kartu Vokal jadi kuning/oranye seperti bintang, Konsonan jadi gelap */
+                                ${item.isVowel ? 'bg-gradient-to-br from-yellow-400 to-orange-600 text-white' : 'bg-slate-800 text-cyan-300 border-b-4 border-slate-700'}
+                            `}
+                        >
+                            <span className="text-6xl md:text-7xl font-black drop-shadow-md">{item.char}</span>
+                            {item.isVowel && <span className="text-xs font-bold bg-white text-orange-900 px-2 py-1 rounded-full mt-2 uppercase">VOKAL</span>}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+        const SyllableLesson = ({ data, onBack, voiceIndex }) => {
+            useEffect(() => { speak(`${data.syllable}. ${data.word}`, voiceIndex); }, [data, voiceIndex]);
+            const [canvasSize, setCanvasSize] = useState({ width: 300, height: 150 });
+            const [dikteSize, setDikteSize] = useState({ width: 100, height: 100 });
+            useEffect(() => {
+                const handleResize = () => {
+                    const width = window.innerWidth;
+                    if (width < 640) { setCanvasSize({ width: width - 48, height: 140 }); const dikteW = (width - 64) / 3; setDikteSize({ width: dikteW, height: dikteW }); }
+                    else { setCanvasSize({ width: 600, height: 200 }); setDikteSize({ width: 150, height: 150 }); }
+                };
+                handleResize(); window.addEventListener('resize', handleResize); return () => window.removeEventListener('resize', handleResize);
+            }, []);
+
+            return (
+                <div className="h-full flex flex-col bg-slate-900">
+                    {/* Header Pelajaran Gelap */}
+                    <div className="flex items-center justify-between p-3 bg-slate-800 shadow-sm sticky top-0 z-30 border-b border-slate-700">
+                        <button onClick={onBack} className="bg-cyan-600 text-white w-10 h-10 rounded-full shadow hover:bg-cyan-700"><i className="fas fa-arrow-left"></i></button>
+                        <h1 className="text-xl md:text-2xl font-black text-white uppercase">BELAJAR: <span className="text-yellow-400">{data.syllable}</span></h1>
+                        <button onClick={() => speak(data.word, voiceIndex)} className="bg-yellow-500 text-white w-10 h-10 rounded-full shadow hover:bg-yellow-600 animate-pulse"><i className="fas fa-volume-up"></i></button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto pb-20">
+                        <div className="max-w-3xl mx-auto p-4 space-y-8">
+                            {/* Kartu Kata Utama Gelap */}
+                            <div className="bg-slate-800 rounded-3xl shadow-lg p-6 flex flex-col md:flex-row items-center gap-6 border-b-4 border-indigo-900">
+                                <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-yellow-400 shadow-inner bg-slate-700 shrink-0 flex items-center justify-center relative">
+                                    {data.image ? (
+                                        <img src={data.image} alt={data.word} className="w-full h-full object-cover cursor-pointer hover:scale-110 transition-transform"
+                                            onClick={() => speak(data.word, voiceIndex)} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
+                                    ) : null}
+                                    <span className="emoji-display drop-shadow-lg transform hover:scale-110 transition-transform cursor-pointer" 
+                                        style={{display: data.image ? 'none' : 'block'}} onClick={() => speak(data.word, voiceIndex)}>{data.emoji}</span>
+                                </div>
+                                <div className="text-center md:text-left flex-1">
+                                    <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+                                        <span className="text-7xl font-black text-cyan-400 font-hand">{data.syllable}</span>
+                                        <i className="fas fa-arrow-right text-slate-500"></i>
+                                        <span className="text-5xl font-bold text-white capitalize">{data.word}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {/* Bagian Membaca */}
+                            <div className="space-y-3">
+                                {/* Ikon diubah jadi buku sci-fi (journal-whills) */}
+                                <div className="flex items-center gap-2 mb-2"><div className="bg-indigo-600 text-white p-2 rounded-lg shadow"><i className="fas fa-book-journal-whills"></i></div><h3 className="text-xl font-bold text-white">Ayo Membaca</h3></div>
+                                <div className="bg-slate-800 rounded-2xl p-4 border-2 border-slate-700 grid grid-cols-2 gap-4">
+                                    {data.pattern.map((row, idx) => (
+                                        <div key={idx} className="flex flex-col items-center justify-center p-3 border-b border-slate-700 last:border-0 bg-slate-900 shadow-sm rounded-xl">
+                                            <div className="flex flex-wrap justify-center text-2xl md:text-3xl font-bold text-indigo-300 tracking-wide">
+                                                {row.map((syl, sIdx) => (
+                                                    <span key={sIdx} className="hover:text-yellow-400 cursor-pointer" onClick={() => speak(syl, voiceIndex)}>
+                                                        {syl}{sIdx < row.length - 1 ? '-' : ''}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            <span className="text-[10px] md:text-xs text-slate-500 font-medium uppercase tracking-[0.2em] mt-1 cursor-pointer hover:text-cyan-400"
+                                                onClick={() => speak(row.join('. '), voiceIndex)}>{row.join('')}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            {/* Bagian Menebalkan */}
+                            <div className="space-y-3">
+                                {/* Ikon diubah jadi tongkat ajaib (magic sparkles) */}
+                                <div className="flex items-center gap-2 mb-2"><div className="bg-yellow-600 text-white p-2 rounded-lg shadow"><i className="fas fa-wand-magic-sparkles"></i></div><h3 className="text-xl font-bold text-white">Ayo Menebalkan</h3></div>
+                                <div className="bg-slate-800 rounded-2xl p-4 border-2 border-slate-700 flex flex-col items-center gap-6">
+                                    {/* Warna pena jadi cyan terang */}
+                                    <DrawingCanvas width={canvasSize.width} height={canvasSize.height} traceText={`${data.syllable}  ${data.syllable}`} penColor="#38bdf8" fontSize={80} />
+                                    <DrawingCanvas width={canvasSize.width} height={canvasSize.height} traceText={`${data.syllable}  ${data.syllable}`} penColor="#38bdf8" fontSize={80} />
+                                </div>
+                            </div>
+                            {/* Bagian Menulis */}
+                            <div className="space-y-3">
+                                {/* Ikon diubah jadi petir (bolt) */}
+                                <div className="flex items-center gap-2 mb-2"><div className="bg-cyan-700 text-white p-2 rounded-lg shadow"><i className="fas fa-bolt"></i></div><h3 className="text-xl font-bold text-white">Menulis & Dikte</h3></div>
+                                <div className="bg-slate-800 rounded-2xl p-4 border-2 border-slate-700 grid grid-cols-3 gap-3 justify-items-center">
+                                    {Array(6).fill(0).map((_, i) => <DrawingCanvas key={i} width={dikteSize.width} height={dikteSize.height} penColor="#38bdf8" className="shadow-md" />)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ReflectionScreen = ({ onBack, voiceIndex }) => {
+            const [pages, setPages] = useState([]); const [currentIndex, setCurrentIndex] = useState(0);
+            useEffect(() => { const shuffled = [...reflectionDataRaw].sort(() => 0.5 - Math.random()); setPages(shuffled.slice(0, 3)); }, []);
+            if (pages.length === 0) return null;
+            const currentData = pages[currentIndex];
+            return (
+                <div className="h-full flex flex-col bg-slate-950">
+                    {/* Header Refleksi Gelap */}
+                    <div className="flex items-center justify-between p-4 bg-slate-800 shadow-sm sticky top-0 z-20 border-b border-slate-700">
+                        <button onClick={onBack} className="bg-cyan-600 text-white w-10 h-10 rounded-full shadow"><i className="fas fa-arrow-left"></i></button>
+                        <h1 className="text-2xl font-bold text-white">REFLEKSI BACA</h1>
+                        <span className="font-bold text-cyan-300 bg-cyan-900/50 px-3 py-1 rounded-lg">{currentIndex + 1}/3</span>
+                    </div>
+                    <div className="flex-1 flex flex-col justify-center p-6 max-w-2xl mx-auto w-full">
+                        {/* Kartu Refleksi Gelap */}
+                        <div className="bg-slate-800 p-8 rounded-3xl shadow-xl border-t-8 border-cyan-600 space-y-6">
+                            {currentData.map((sentence, idx) => (
+                                <div key={idx} onClick={() => speak(sentence, voiceIndex)} className="text-2xl font-medium text-slate-100 border-b border-slate-700 pb-3 pl-4 cursor-pointer hover:bg-slate-700 rounded transition flex items-start gap-3">
+                                    <span className="text-sm font-bold text-slate-500 mt-2">{idx+1}</span>{sentence}
+                                </div>
+                            ))}
+                        </div>
+                        <button onClick={() => currentIndex < 2 ? setCurrentIndex(i => i+1) : onBack()} className="mt-8 bg-cyan-600 text-white font-bold py-4 rounded-xl shadow-lg w-full text-xl uppercase hover:bg-cyan-700">
+                            {currentIndex === 2 ? "Selesai" : "Berikutnya"} <i className="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [currentScreen, setCurrentScreen] = useState('menu'); 
+            const [selectedSyllable, setSelectedSyllable] = useState(null);
+            const [showSettings, setShowSettings] = useState(false);
+            const [voiceIndex, setVoiceIndex] = useState(parseInt(localStorage.getItem('bacalisVoiceIndex')) || 0);
+
+            useEffect(() => { localStorage.setItem('bacalisVoiceIndex', voiceIndex); }, [voiceIndex]);
+            useEffect(() => { const loadV = () => window.speechSynthesis.getVoices(); loadV(); window.speechSynthesis.onvoiceschanged = loadV; }, []);
+
+            const renderScreen = () => {
+                switch(currentScreen) {
+                    case 'menu': return (
+                        // Background Menu: Gradasi Biru Tua ke Ungu Gelap
+                        <div className="h-full flex flex-col items-center justify-center p-6 bg-gradient-to-b from-slate-900 via-purple-900 to-slate-900 relative">
+                            <button onClick={() => setShowSettings(true)} className="absolute top-6 right-6 bg-white/10 p-3 rounded-full text-white backdrop-blur-md transition hover:bg-white/20"><i className="fas fa-cog text-2xl"></i></button>
+                            <div className="text-center mb-10 animate-pop">
+                                {/* Judul dengan bayangan indigo */}
+                                <h1 className="text-7xl font-black text-white drop-shadow-md font-hand mb-2" style={{textShadow: '4px 4px 0 #6366f1'}}>BACALIS</h1>
+                                {/* Label tema diubah */}
+                                <div className="bg-white/10 backdrop-blur-sm px-6 py-2 rounded-full inline-block"><p className="text-white font-bold text-lg tracking-wide uppercase">Petualangan Galaksi Ilmu</p></div>
+                                {/* Badge level warna cyan */}
+                                <div className="mt-3"><span className="bg-cyan-500 text-cyan-950 px-4 py-1 rounded-full text-sm font-black uppercase shadow-md border-2 border-white/20">Level 3</span></div>
+                            </div>
+                            
+                            {/* Modal Settings Gelap */}
+                            {showSettings && (
+                                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm">
+                                    <div className="bg-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-slate-700">
+                                        <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold text-white">Pilih Suara Pemandu</h3><button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-cyan-400 text-2xl"><i className="fas fa-times-circle"></i></button></div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {[ {l:'Kakak 1', i:'👩'}, {l:'Kakak 2', i:'👩‍🦰'}, {l:'Kakak 3', i:'👨'}, {l:'Kakak 4', i:'👨‍🦱'} ].map((v, i) => (
+                                                <button key={i} onClick={() => { setVoiceIndex(i); speak('Halo, saya Pemandu nomor ' + (i+1), i); }}
+                                                    // Tombol pilihan suara gelap dengan border cyan saat aktif
+                                                    className={`p-4 rounded-2xl flex flex-col items-center gap-2 border-4 transition-all ${voiceIndex === i ? 'border-cyan-400 bg-slate-700 scale-105 shadow-md text-white' : 'border-transparent bg-slate-900 opacity-60 text-slate-300'}`}>
+                                                    <span className="text-4xl">{v.i}</span><span className="font-bold text-xs uppercase">{v.l}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <button onClick={() => setShowSettings(false)} className="w-full mt-6 bg-cyan-600 text-white font-bold py-3 rounded-xl shadow-lg transition active:scale-95 hover:bg-cyan-700">Mulai Misi</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
+                                {/* Menu Cards dengan ikon dan warna tema antariksa */}
+                                <MenuCard title="MENGENAL ABJAD" subtitle="A - Z Astronaut" color="from-blue-600 to-blue-900" icon="fa-user-astronaut" onClick={() => setCurrentScreen('alphabet')} />
+                                <MenuCard title="HURUF VOKAL" subtitle="Inti Bintang" color="from-yellow-500 to-orange-600" icon="fa-star" onClick={() => setCurrentScreen('vowel')} />
+                                <MenuCard title="BACA SUKU KATA" subtitle="Jejak Meteor" color="from-purple-600 to-indigo-800" icon="fa-meteor" onClick={() => setCurrentScreen('syllableMenu')} />
+                                <MenuCard title="REFLEKSI BACA" subtitle="Misi Penjelajah" color="from-cyan-600 to-cyan-900" icon="fa-flag" onClick={() => setCurrentScreen('reflection')} />
+                            </div>
+                        </div>
+                    );
+                    case 'alphabet': return <AlphabetScreen voiceIndex={voiceIndex} onBack={() => setCurrentScreen('menu')} filterVowel={false} />;
+                    case 'vowel': return <AlphabetScreen voiceIndex={voiceIndex} onBack={() => setCurrentScreen('menu')} filterVowel={true} />;
+                    case 'syllableMenu': return <SyllableMenu onBack={() => setCurrentScreen('menu')} onSelect={(item) => { setSelectedSyllable(item); setCurrentScreen('syllableLesson'); }} />;
+                    case 'syllableLesson': return <SyllableLesson voiceIndex={voiceIndex} data={selectedSyllable} onBack={() => setCurrentScreen('syllableMenu')} />;
+                    case 'reflection': return <ReflectionScreen voiceIndex={voiceIndex} onBack={() => setCurrentScreen('menu')} />;
+                }
+            };
+            return <div className="h-screen w-full overflow-hidden relative">{renderScreen()}</div>;
+        };
+
+        const SyllableMenu = ({ onBack, onSelect }) => (
+            <div className="h-full flex flex-col">
+                {/* Header Menu Suku Kata Gelap */}
+                <div className="flex items-center justify-between p-4 bg-slate-800 shadow-sm sticky top-0 z-20 border-b border-slate-700">
+                    <button onClick={onBack} className="bg-cyan-600 text-white w-10 h-10 rounded-full shadow"><i className="fas fa-arrow-left"></i></button>
+                    <h1 className="text-2xl font-bold text-white uppercase">Misi Antariksa</h1><div className="w-10"></div>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 bg-slate-950">
+                    <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+                        {syllableData.map(item => (
+                            // Kartu Suku Kata Gelap
+                            <div key={item.id} onClick={() => onSelect(item)} className="bg-slate-800 rounded-xl shadow-md p-4 flex flex-col items-center justify-center cursor-pointer border-b-4 border-cyan-600 transition active:translate-y-1 hover:bg-slate-700">
+                                <span className="text-4xl font-black text-cyan-300 uppercase mb-1">{item.syllable}</span>
+                                <span className="text-sm text-slate-400 capitalize">{item.word}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+
+        const MenuCard = ({ title, subtitle, color, icon, onClick }) => (
+            // Border bawah diubah jadi transparan hitam agar tidak terlalu harsh
+            <button onClick={onClick} className={`relative overflow-hidden group bg-gradient-to-br ${color} rounded-3xl p-6 text-left shadow-xl transform transition hover:scale-105 active:scale-95 border-b-8 border-black/20 flex items-center justify-between`}>
+                <div className="z-10"><h2 className="text-2xl font-black text-white mb-1 drop-shadow-sm uppercase">{title}</h2><p className="text-white/80 font-medium">{subtitle}</p></div>
+                <div className="z-10 bg-white/20 p-4 rounded-full backdrop-blur-sm"><i className={`fas ${icon} text-3xl text-white`}></i></div>
+                <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+            </button>
+        );
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
