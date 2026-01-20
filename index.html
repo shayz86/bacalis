@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BACALIS - Petualangan Huruf</title>
     
-    <!-- Link ke Manifest PWA -->
     <link rel="alternate" href="manifest.json" />
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#FF8E00">
@@ -45,7 +44,7 @@
             100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
         }
 
-        /* --- Animasi Judul Pop-Out Bouncing --- */
+        /* --- Animasi Judul --- */
         .title-letter {
             display: inline-block;
             font-size: 5rem;
@@ -65,7 +64,7 @@
         .letter-i { --shadow-color: #F473B9; color: #FF9BCF; animation-delay: 0.5s; }
         .letter-s { --shadow-color: #FF8E00; color: #FFAA33; animation-delay: 0.6s; }
 
-        /* --- Kartu Level Squishy --- */
+        /* --- Kartu Level --- */
         .level-card {
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             border-bottom: 12px solid rgba(0,0,0,0.1);
@@ -79,44 +78,32 @@
             100% { transform: translateY(-20px) scale(1.1); }
         }
 
-        /* --- Install Popup --- */
-        #install-modal { display: none; }
-        .modal-bounce { animation: modalPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes modalPop {
-            0% { transform: scale(0.5); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
         .glass-bg {
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(12px);
             border: 2px solid white;
         }
+
+        #install-modal { display: none; }
     </style>
 </head>
 <body>
 
     <div id="bg-animation" class="bg-animation"></div>
 
-    <!-- Popup Instalasi -->
     <div id="install-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-        <div class="glass-bg p-8 rounded-[40px] max-w-sm w-full text-center shadow-2xl modal-bounce border-t-8 border-orange-400">
+        <div class="glass-bg p-8 rounded-[40px] max-w-sm w-full text-center shadow-2xl border-t-8 border-orange-400">
             <div class="text-7xl mb-4">📱</div>
             <h2 class="font-fredoka text-3xl text-orange-600 mb-2">Pasang BACALIS</h2>
             <p class="text-gray-700 font-bold mb-6">Ayo pasang aplikasi di layar HP kamu agar belajar jadi lebih mudah!</p>
             <div class="flex flex-col gap-3">
-                <button id="btn-install" class="bg-orange-500 hover:bg-orange-600 text-white font-fredoka py-4 px-6 rounded-2xl text-xl shadow-lg transform transition active:scale-95">
-                    PASANG SEKARANG
-                </button>
-                <button id="btn-close" class="text-gray-500 font-bold py-2 hover:text-gray-700 transition">
-                    Nanti Saja
-                </button>
+                <button id="btn-install" class="bg-orange-500 hover:bg-orange-600 text-white font-fredoka py-4 px-6 rounded-2xl text-xl shadow-lg transform transition active:scale-95">PASANG SEKARANG</button>
+                <button id="btn-close" class="text-gray-500 font-bold py-2">Nanti Saja</button>
             </div>
         </div>
     </div>
 
     <div class="container mx-auto px-4 py-12 relative z-10">
-        <!-- Header -->
         <header class="text-center mb-16">
             <div class="inline-flex gap-1 font-fredoka mb-6">
                 <span class="title-letter letter-b">B</span>
@@ -129,43 +116,49 @@
             </div>
             <div class="flex justify-center">
                 <p class="text-xl md:text-2xl text-blue-800 font-bold bg-white/60 px-8 py-3 rounded-full border-2 border-white shadow-sm">
-                    Petualangan Baca, Tulis, Hitung! ✨
+                    Petualangan Baca & Tulis ✨
                 </p>
             </div>
         </header>
 
-        <!-- Grid Level -->
         <main class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
-            <a href="level1/index.html" class="level-card glass-bg rounded-[45px] p-8 text-center" style="border-color: #FF8E8E;">
-                <div class="icon-box text-8xl mb-4">🍎</div>
-                <h3 class="text-3xl font-fredoka text-red-500">Level 1</h3>
-                <p class="text-gray-600 font-bold mt-2">Mengenal Huruf</p>
+            
+            <a href="level1/index.html" class="level-card glass-bg rounded-[45px] p-8 text-center" style="border-color: #45B1E8;">
+                <div class="icon-box text-8xl mb-4">🤖</div>
+                <h3 class="text-3xl font-fredoka" style="color: #45B1E8;">Level 1</h3>
+                <p class="text-gray-600 font-bold mt-2">Dunia Robot: Mengenal Huruf A</p>
             </a>
-            <a href="level2/index.html" class="level-card glass-bg rounded-[45px] p-8 text-center" style="border-color: #72E2DB;">
-                <div class="icon-box text-8xl mb-4">🐶</div>
-                <h3 class="text-3xl font-fredoka text-teal-500">Level 2</h3>
-                <p class="text-gray-600 font-bold mt-2">Suku Kata A-I-U</p>
+
+            <a href="level2/index.html" class="level-card glass-bg rounded-[45px] p-8 text-center" style="border-color: #7BB661;">
+                <div class="icon-box text-8xl mb-4">🦁</div>
+                <h3 class="text-3xl font-fredoka" style="color: #7BB661;">Level 2</h3>
+                <p class="text-gray-600 font-bold mt-2">Kebun Binatang: Suku Kata A-I</p>
             </a>
-            <a href="level3/index.html" class="level-card glass-bg rounded-[45px] p-8 text-center" style="border-color: #FFE66D;">
-                <div class="icon-box text-8xl mb-4">🚗</div>
-                <h3 class="text-3xl font-fredoka text-yellow-600">Level 3</h3>
-                <p class="text-gray-600 font-bold mt-2">Membaca Kata</p>
-            </a>
-            <a href="level4/index.html" class="level-card glass-bg rounded-[45px] p-8 text-center" style="border-color: #91D18B;">
-                <div class="icon-box text-8xl mb-4">✏️</div>
-                <h3 class="text-3xl font-fredoka text-green-500">Level 4</h3>
-                <p class="text-gray-600 font-bold mt-2">Belajar Menulis</p>
-            </a>
-            <a href="level5/index.html" class="level-card glass-bg rounded-[45px] p-8 text-center" style="border-color: #7EB1FF;">
-                <div class="icon-box text-8xl mb-4">🔢</div>
-                <h3 class="text-3xl font-fredoka text-blue-500">Level 5</h3>
-                <p class="text-gray-600 font-bold mt-2">Mengenal Angka</p>
-            </a>
-            <a href="level6/index.html" class="level-card glass-bg rounded-[45px] p-8 text-center" style="border-color: #FF9BCF;">
+
+            <a href="level3/index.html" class="level-card glass-bg rounded-[45px] p-8 text-center" style="border-color: #6E57E0;">
                 <div class="icon-box text-8xl mb-4">🚀</div>
-                <h3 class="text-3xl font-fredoka text-pink-500">Level 6</h3>
-                <p class="text-gray-600 font-bold mt-2">Berhitung Dasar</p>
+                <h3 class="text-3xl font-fredoka" style="color: #6E57E0;">Level 3</h3>
+                <p class="text-gray-600 font-bold mt-2">Luar Angkasa: Membaca Kata A-I-U</p>
             </a>
+
+            <a href="level4/index.html" class="level-card glass-bg rounded-[45px] p-8 text-center" style="border-color: #00D2FF;">
+                <div class="icon-box text-8xl mb-4">🐙</div>
+                <h3 class="text-3xl font-fredoka" style="color: #00D2FF;">Level 4</h3>
+                <p class="text-gray-600 font-bold mt-2">Bawah Laut: Belajar A-I-U-E</p>
+            </a>
+
+            <a href="level5/index.html" class="level-card glass-bg rounded-[45px] p-8 text-center" style="border-color: #E74C3C;">
+                <div class="icon-box text-8xl mb-4">🏎️</div>
+                <h3 class="text-3xl font-fredoka" style="color: #E74C3C;">Level 5</h3>
+                <p class="text-gray-600 font-bold mt-2">Arena Balap: Mengenal A-I-U-E-O</p>
+            </a>
+
+            <a href="level6/index.html" class="level-card glass-bg rounded-[45px] p-8 text-center" style="border-color: #A29BFE;">
+                <div class="icon-box text-8xl mb-4">👾</div>
+                <h3 class="text-3xl font-fredoka" style="color: #A29BFE;">Level 6</h3>
+                <p class="text-gray-600 font-bold mt-2">Pixel Art: Belajar Membaca</p>
+            </a>
+
         </main>
 
         <footer class="text-center mt-20 text-blue-900/70">
@@ -175,44 +168,36 @@
     </div>
 
     <script>
-        // Registrasi Service Worker
+        // Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('BACALIS Offline Ready!', reg))
-                    .catch(err => console.log('SW Registration failed', err));
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW failed', err));
             });
         }
 
-        // Logika Install Popup
+        // Install Logic
         let deferredPrompt;
         const modal = document.getElementById('install-modal');
-        const btnInstall = document.getElementById('btn-install');
-        const btnClose = document.getElementById('btn-close');
-
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            setTimeout(() => { modal.style.display = 'flex'; }, 2500);
+            setTimeout(() => { modal.style.display = 'flex'; }, 500);
         });
 
-        btnInstall.addEventListener('click', async () => {
+        document.getElementById('btn-install').addEventListener('click', async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt = null;
                 modal.style.display = 'none';
-            } else {
-                alert("Gunakan browser Chrome di Android untuk memasang aplikasi ini!");
-                modal.style.display = 'none';
             }
         });
 
-        btnClose.addEventListener('click', () => { modal.style.display = 'none'; });
+        document.getElementById('btn-close').addEventListener('click', () => { modal.style.display = 'none'; });
 
-        // Floating Letters Background
+        // Floating Animation
         const bgContainer = document.getElementById('bg-animation');
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('');
-        const colors = ['#FF6B6B', '#4ECDC4', '#FFD93D', '#6BCB77', '#4D96FF', '#F473B9'];
+        const colors = ['#45B1E8', '#7BB661', '#6E57E0', '#00D2FF', '#E74C3C', '#A29BFE'];
 
         function createChar() {
             const el = document.createElement('div');
@@ -231,4 +216,3 @@
     </script>
 </body>
 </html>
-
