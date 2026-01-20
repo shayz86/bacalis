@@ -3,44 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bacalis Dino - Belajar Baca Tulis</title>
+    <title>Bacalis Bot - Laboratorium Baca Tulis</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
     <style>
         body { 
             font-family: 'Fredoka', sans-serif; 
-            background-color: #f7fee7; /* Hijau pucat */
+            background-color: #f1f5f9; /* Slate Pucat / Metalik */
             overscroll-behavior: none; 
             user-select: none; 
             -webkit-user-select: none; 
         }
         canvas { touch-action: none; cursor: crosshair; }
-        .font-hand { font-family: 'Patrick Hand', cursive; }
+        .font-mono-tech { font-family: 'Share Tech Mono', monospace; }
         
         .animate-pop { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes pop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         
-        /* Dino Theme Specific Classes */
-        .jungle-gradient { background: linear-gradient(135deg, #166534 0%, #064e3b 100%); }
-        .fossil-card { background: #fef3c7; border-bottom: 6px solid #d97706; }
-        .stone-border { border: 4px solid #4b5563; border-radius: 20px; }
+        /* Robot Theme Specific Classes */
+        .circuit-gradient { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
+        .metal-card { background: #e2e8f0; border-bottom: 6px solid #64748b; }
+        .tech-border { border: 4px solid #3b82f6; border-radius: 20px; }
         .emoji-display { font-size: 8rem; line-height: 1; filter: drop-shadow(0 10px 8px rgba(0,0,0,0.1)); }
 
-        /* --- NEW: BACKGROUND ANIMATIONS --- */
-        /* Animasi mengapung ke atas untuk partikel hutan */
-        @keyframes floatUpJungle {
+        /* BACKGROUND ANIMATIONS: GEARS & BOLTS */
+        @keyframes floatUpTech {
             0% {
                 transform: translateY(110vh) rotate(0deg) scale(0.8);
                 opacity: 0;
             }
-            10% { opacity: 0.5; }
-            90% { opacity: 0.5; }
+            10% { opacity: 0.3; }
+            90% { opacity: 0.3; }
             100% {
                 transform: translateY(-10vh) rotate(360deg) scale(1.2);
                 opacity: 0;
@@ -50,10 +49,22 @@
         .bg-particle {
             position: absolute;
             bottom: 0;
-            pointer-events: none; /* Agar tidak mengganggu klik */
-            animation: floatUpJungle linear infinite;
-            z-index: 1; /* Di atas background gradient, di bawah konten utama */
+            pointer-events: none;
+            animation: floatUpTech linear infinite;
+            z-index: 1;
         }
+        
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(59, 130, 246, 0.1);
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 5;
+            animation: scan 4s linear infinite;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
     </style>
 </head>
 <body>
@@ -62,7 +73,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- GLOBAL UTILS (TIDAK BERUBAH) ---
+        // --- GLOBAL UTILS ---
         const speak = (text, voiceIndex = 0) => {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
@@ -84,7 +95,7 @@
             }
         };
 
-        // --- DATA (TIDAK BERUBAH) ---
+        // --- DATA ---
         const alphabetData = Array.from({ length: 26 }, (_, i) => ({
             char: String.fromCharCode(65 + i),
             isVowel: ['A', 'I', 'U', 'E', 'O'].includes(String.fromCharCode(65 + i))
@@ -122,8 +133,8 @@
             ["rasa lada apa", "rasa paha papa", "ada rasa apa", "lara rasa dada", "rata rata saja"]
         ];
 
-        // --- COMPONENTS (DrawingCanvas TIDAK BERUBAH) ---
-        const DrawingCanvas = ({ width, height, traceText, title, className, penColor = "#000000", fontSize = 60 }) => {
+        // --- COMPONENTS ---
+        const DrawingCanvas = ({ width, height, traceText, title, className, penColor = "#3b82f6", fontSize = 60 }) => {
             const canvasRef = useRef(null);
             const [isDrawing, setIsDrawing] = useState(false);
             useEffect(() => {
@@ -135,7 +146,7 @@
                 ctx.scale(dpr, dpr); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.lineWidth = 4;
                 if (traceText) {
                     ctx.font = `bold ${fontSize}px 'Fredoka', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-                    ctx.fillStyle = "#e5e7eb"; ctx.strokeStyle = "#d1d5db"; ctx.setLineDash([8, 8]); ctx.lineWidth = 3;
+                    ctx.fillStyle = "#e2e8f0"; ctx.strokeStyle = "#cbd5e1"; ctx.setLineDash([8, 8]); ctx.lineWidth = 3;
                     ctx.fillText(traceText, width / 2, height / 2); ctx.strokeText(traceText, width / 2, height / 2);
                     ctx.setLineDash([]); ctx.lineWidth = 5;
                 }
@@ -164,7 +175,7 @@
                 if (traceText) {
                     const dpr = window.devicePixelRatio || 1; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.scale(dpr, dpr);
                     ctx.font = `bold ${fontSize}px 'Fredoka', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-                    ctx.fillStyle = "#e5e7eb"; ctx.strokeStyle = "#d1d5db"; ctx.setLineDash([8, 8]); ctx.lineWidth = 3;
+                    ctx.fillStyle = "#e2e8f0"; ctx.strokeStyle = "#cbd5e1"; ctx.setLineDash([8, 8]); ctx.lineWidth = 3;
                     ctx.fillText(traceText, width/2, height/2); ctx.strokeText(traceText, width/2, height/2);
                     ctx.setLineDash([]); ctx.strokeStyle = penColor; ctx.lineWidth = 5;
                 }
@@ -173,25 +184,25 @@
                 <div className={`relative flex flex-col items-center ${className}`}>
                     <canvas ref={canvasRef} onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={() => setIsDrawing(false)}
                         onMouseLeave={() => setIsDrawing(false)} onTouchStart={startDrawing} onTouchMove={draw}
-                        onTouchEnd={() => setIsDrawing(false)} className="bg-white rounded-xl shadow-sm border-2 border-dashed border-stone-300 touch-none" />
-                    <button onClick={clearCanvas} className="absolute -top-3 -right-3 bg-red-600 text-white w-8 h-8 rounded-full text-sm shadow-md z-10 flex items-center justify-center transition-transform active:scale-95 border-2 border-white"><i className="fas fa-trash"></i></button>
+                        onTouchEnd={() => setIsDrawing(false)} className="bg-white rounded-xl shadow-sm border-2 border-dashed border-slate-300 touch-none" />
+                    <button onClick={clearCanvas} className="absolute -top-3 -right-3 bg-red-500 text-white w-8 h-8 rounded-full text-sm shadow-md z-10 flex items-center justify-center transition-transform active:scale-95 border-2 border-white"><i className="fas fa-trash"></i></button>
                 </div>
             );
         };
 
-        // --- SCREENS (Alphabet, SyllableLesson, Reflection, SyllableMenu TIDAK BERUBAH) ---
+        // --- SCREENS ---
         const AlphabetScreen = ({ onBack, filterVowel, voiceIndex }) => {
             const data = filterVowel ? alphabetData.filter(i => i.isVowel) : alphabetData;
             return (
-                <div className="h-full flex flex-col bg-[#f7fee7]">
-                    <div className="flex items-center justify-between p-4 bg-emerald-800 text-white shadow-lg sticky top-0 z-20">
-                        <button onClick={onBack} className="bg-amber-500 text-white w-10 h-10 rounded-full shadow-lg active:scale-95 transition-transform border-2 border-amber-200">
+                <div className="h-full flex flex-col bg-slate-100">
+                    <div className="flex items-center justify-between p-4 bg-slate-800 text-white shadow-lg sticky top-0 z-20">
+                        <button onClick={onBack} className="bg-blue-500 text-white w-10 h-10 rounded-full shadow-lg active:scale-95 transition-transform border-2 border-blue-300">
                             <i className="fas fa-arrow-left"></i>
                         </button>
                         <h1 className="text-xl font-black tracking-widest uppercase">
-                            {filterVowel ? "🦕 Vokal" : "🦖 Abjad"}
+                            {filterVowel ? "🤖 Vokal" : "🔩 Data Abjad"}
                         </h1>
-                        <div className="w-10 text-center"><i className="fas fa-paw opacity-50"></i></div>
+                        <div className="w-10 text-center"><i className="fas fa-microchip opacity-50"></i></div>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4">
                         <div className="flex flex-wrap justify-center gap-4 pb-10">
@@ -203,11 +214,11 @@
                                         ${filterVowel ? 'w-[42%]' : 'w-[28%] md:w-[15%]'} 
                                         aspect-square rounded-3xl flex flex-col items-center justify-center shadow-lg cursor-pointer
                                         transform transition hover:scale-105 active:scale-95 border-b-8
-                                        ${item.isVowel ? 'bg-amber-400 border-amber-600 text-white' : 'bg-white border-stone-300 text-emerald-800'}
+                                        ${item.isVowel ? 'bg-blue-500 border-blue-700 text-white' : 'bg-white border-slate-300 text-slate-800'}
                                     `}
                                 >
                                     <span className="text-6xl font-black drop-shadow-sm">{item.char}</span>
-                                    {item.isVowel && <span className="text-[10px] font-bold bg-white text-amber-600 px-2 py-0.5 rounded-full mt-1">FOSIL</span>}
+                                    {item.isVowel && <span className="text-[10px] font-bold bg-white text-blue-600 px-2 py-0.5 rounded-full mt-1 uppercase">Power</span>}
                                 </div>
                             ))}
                         </div>
@@ -219,28 +230,27 @@
         const SyllableLesson = ({ data, onBack, voiceIndex }) => {
             useEffect(() => { speak(`${data.syllable}. ${data.word}`, voiceIndex); }, [data, voiceIndex]);
             const [canvasSize, setCanvasSize] = useState({ width: 300, height: 150 });
-            const [dikteSize, setDikteSize] = useState({ width: 100, height: 100 });
             useEffect(() => {
                 const handleResize = () => {
                     const width = window.innerWidth;
-                    if (width < 640) { setCanvasSize({ width: width - 48, height: 140 }); const dikteW = (width - 64) / 3; setDikteSize({ width: dikteW, height: dikteW }); }
-                    else { setCanvasSize({ width: 600, height: 200 }); setDikteSize({ width: 150, height: 150 }); }
+                    if (width < 640) { setCanvasSize({ width: width - 48, height: 140 }); }
+                    else { setCanvasSize({ width: 600, height: 200 }); }
                 };
                 handleResize(); window.addEventListener('resize', handleResize); return () => window.removeEventListener('resize', handleResize);
             }, []);
 
             return (
-                <div className="h-full flex flex-col bg-[#fdfcf0]">
-                    <div className="flex items-center justify-between p-3 bg-emerald-900 text-white shadow-md sticky top-0 z-30">
-                        <button onClick={onBack} className="bg-amber-500 text-white w-10 h-10 rounded-full shadow border-2 border-amber-300"><i className="fas fa-arrow-left"></i></button>
-                        <h1 className="text-lg md:text-xl font-black uppercase">Jejak: <span className="text-amber-400">{data.syllable}</span></h1>
-                        <button onClick={() => speak(data.word, voiceIndex)} className="bg-orange-500 text-white w-10 h-10 rounded-full shadow border-2 border-orange-300 animate-bounce"><i className="fas fa-volume-up"></i></button>
+                <div className="h-full flex flex-col bg-[#f8fafc]">
+                    <div className="flex items-center justify-between p-3 bg-slate-900 text-white shadow-md sticky top-0 z-30">
+                        <button onClick={onBack} className="bg-blue-600 text-white w-10 h-10 rounded-full shadow border-2 border-blue-400"><i className="fas fa-arrow-left"></i></button>
+                        <h1 className="text-lg md:text-xl font-black uppercase">Sirkuit: <span className="text-blue-400">{data.syllable}</span></h1>
+                        <button onClick={() => speak(data.word, voiceIndex)} className="bg-cyan-500 text-white w-10 h-10 rounded-full shadow border-2 border-cyan-300 animate-pulse"><i className="fas fa-volume-up"></i></button>
                     </div>
                     <div className="flex-1 overflow-y-auto pb-20">
                         <div className="max-w-3xl mx-auto p-4 space-y-8">
-                            <div className="bg-white rounded-[40px] shadow-xl p-6 flex flex-col md:flex-row items-center gap-6 border-b-8 border-emerald-100 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-4 opacity-5"><i className="fas fa-dragon text-9xl"></i></div>
-                                <div className="w-40 h-40 md:w-48 md:h-48 rounded-[30px] overflow-hidden border-4 border-amber-400 shadow-inner bg-stone-50 shrink-0 flex items-center justify-center">
+                            <div className="bg-white rounded-[40px] shadow-xl p-6 flex flex-col md:flex-row items-center gap-6 border-b-8 border-slate-200 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-4 opacity-5"><i className="fas fa-robot text-9xl"></i></div>
+                                <div className="w-40 h-40 md:w-48 md:h-48 rounded-[30px] overflow-hidden border-4 border-blue-500 shadow-inner bg-slate-50 shrink-0 flex items-center justify-center">
                                     {data.image ? (
                                         <img src={data.image} alt={data.word} className="w-full h-full object-cover" />
                                     ) : null}
@@ -248,33 +258,33 @@
                                 </div>
                                 <div className="text-center md:text-left flex-1">
                                     <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
-                                        <span className="text-7xl font-black text-orange-600 font-hand">{data.syllable}</span>
-                                        <i className="fas fa-skull-crossbones text-stone-300"></i>
-                                        <span className="text-5xl font-bold text-emerald-900 capitalize">{data.word}</span>
+                                        <span className="text-7xl font-black text-blue-600 font-mono-tech">{data.syllable}</span>
+                                        <i className="fas fa-bolt text-slate-300"></i>
+                                        <span className="text-5xl font-bold text-slate-900 capitalize">{data.word}</span>
                                     </div>
                                 </div>
                             </div>
                             <div className="space-y-3">
-                                <div className="flex items-center gap-2 mb-2"><div className="bg-emerald-700 text-white p-2 rounded-lg shadow"><i className="fas fa-leaf"></i></div><h3 className="text-xl font-bold text-emerald-900">Ayo Membaca</h3></div>
-                                <div className="bg-emerald-50 rounded-[30px] p-4 border-2 border-emerald-200 grid grid-cols-2 gap-4">
+                                <div className="flex items-center gap-2 mb-2"><div className="bg-slate-700 text-white p-2 rounded-lg shadow"><i className="fas fa-terminal"></i></div><h3 className="text-xl font-bold text-slate-900">Input Membaca</h3></div>
+                                <div className="bg-slate-50 rounded-[30px] p-4 border-2 border-slate-200 grid grid-cols-2 gap-4">
                                     {data.pattern.map((row, idx) => (
-                                        <div key={idx} className="flex flex-col items-center justify-center p-3 bg-white shadow-sm rounded-2xl border-b-4 border-stone-200">
-                                            <div className="flex flex-wrap justify-center text-2xl font-bold text-emerald-800">
+                                        <div key={idx} className="flex flex-col items-center justify-center p-3 bg-white shadow-sm rounded-2xl border-b-4 border-slate-200">
+                                            <div className="flex flex-wrap justify-center text-2xl font-bold text-slate-800">
                                                 {row.map((syl, sIdx) => (
-                                                    <span key={sIdx} className="hover:text-orange-500 cursor-pointer" onClick={() => speak(syl, voiceIndex)}>
+                                                    <span key={sIdx} className="hover:text-blue-500 cursor-pointer" onClick={() => speak(syl, voiceIndex)}>
                                                         {syl}{sIdx < row.length - 1 ? '-' : ''}
                                                     </span>
                                                 ))}
                                             </div>
-                                            <span className="text-[10px] text-stone-400 font-black uppercase mt-1 cursor-pointer" onClick={() => speak(row.join('. '), voiceIndex)}>{row.join('')}</span>
+                                            <span className="text-[10px] text-slate-400 font-black uppercase mt-1 cursor-pointer" onClick={() => speak(row.join('. '), voiceIndex)}>{row.join('')}</span>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                             <div className="space-y-3">
-                                <div className="flex items-center gap-2 mb-2"><div className="bg-amber-600 text-white p-2 rounded-lg shadow"><i className="fas fa-egg"></i></div><h3 className="text-xl font-bold text-stone-700">Tebalkan Jejak</h3></div>
-                                <div className="bg-amber-50 rounded-[30px] p-4 border-2 border-amber-200 flex flex-col items-center gap-6">
-                                    <DrawingCanvas width={canvasSize.width} height={canvasSize.height} traceText={`${data.syllable}`} penColor="#b45309" fontSize={80} />
+                                <div className="flex items-center gap-2 mb-2"><div className="bg-blue-600 text-white p-2 rounded-lg shadow"><i className="fas fa-signature"></i></div><h3 className="text-xl font-bold text-slate-700">Scan Tulisan</h3></div>
+                                <div className="bg-blue-50 rounded-[30px] p-4 border-2 border-blue-200 flex flex-col items-center gap-6">
+                                    <DrawingCanvas width={canvasSize.width} height={canvasSize.height} traceText={`${data.syllable}`} penColor="#2563eb" fontSize={80} />
                                 </div>
                             </div>
                         </div>
@@ -289,23 +299,23 @@
             if (pages.length === 0) return null;
             const currentData = pages[currentIndex];
             return (
-                <div className="h-full flex flex-col bg-orange-50">
-                    <div className="flex items-center justify-between p-4 bg-orange-700 text-white shadow-lg sticky top-0 z-20">
-                        <button onClick={onBack} className="bg-white text-orange-700 w-10 h-10 rounded-full shadow border-2 border-orange-200"><i className="fas fa-arrow-left"></i></button>
-                        <h1 className="text-xl font-black uppercase tracking-widest">GUA BACA 🌋</h1>
-                        <span className="font-bold bg-orange-900/30 px-3 py-1 rounded-full text-xs">{currentIndex + 1}/3</span>
+                <div className="h-full flex flex-col bg-slate-900">
+                    <div className="flex items-center justify-between p-4 bg-blue-900 text-white shadow-lg sticky top-0 z-20">
+                        <button onClick={onBack} className="bg-white text-blue-900 w-10 h-10 rounded-full shadow border-2 border-blue-200"><i className="fas fa-arrow-left"></i></button>
+                        <h1 className="text-xl font-black uppercase tracking-widest">LAB BACA 🧪</h1>
+                        <span className="font-bold bg-blue-500/30 px-3 py-1 rounded-full text-xs">LOG {currentIndex + 1}/3</span>
                     </div>
                     <div className="flex-1 flex flex-col justify-center p-6 max-w-2xl mx-auto w-full">
-                        <div className="bg-white p-8 rounded-[40px] shadow-2xl border-t-[12px] border-orange-500 space-y-6 relative overflow-hidden">
-                            <div className="absolute bottom-0 right-0 opacity-10 -mb-10 -mr-10"><i className="fas fa-mountain text-[15rem]"></i></div>
+                        <div className="bg-white p-8 rounded-[40px] shadow-2xl border-t-[12px] border-blue-500 space-y-6 relative overflow-hidden">
+                            <div className="absolute bottom-0 right-0 opacity-5 -mb-10 -mr-10"><i className="fas fa-microchip text-[15rem]"></i></div>
                             {currentData.map((sentence, idx) => (
-                                <div key={idx} onClick={() => speak(sentence, voiceIndex)} className="text-2xl font-bold text-stone-800 border-b-2 border-orange-50 pb-3 pl-4 cursor-pointer hover:bg-orange-50 rounded-2xl transition flex items-center gap-4">
-                                    <span className="bg-orange-100 text-orange-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">{idx+1}</span>{sentence}
+                                <div key={idx} onClick={() => speak(sentence, voiceIndex)} className="text-2xl font-bold text-slate-800 border-b-2 border-slate-50 pb-3 pl-4 cursor-pointer hover:bg-blue-50 rounded-2xl transition flex items-center gap-4">
+                                    <span className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">{idx+1}</span>{sentence}
                                 </div>
                             ))}
                         </div>
-                        <button onClick={() => currentIndex < 2 ? setCurrentIndex(i => i+1) : onBack()} className="mt-8 bg-emerald-700 text-white font-black py-4 rounded-[25px] shadow-xl w-full text-xl uppercase border-b-8 border-emerald-900">
-                            {currentIndex === 2 ? "HEBAT! SELESAI" : "Misi Berikutnya"} <i className="fas fa-chevron-right ml-2"></i>
+                        <button onClick={() => currentIndex < 2 ? setCurrentIndex(i => i+1) : onBack()} className="mt-8 bg-blue-700 text-white font-black py-4 rounded-[25px] shadow-xl w-full text-xl uppercase border-b-8 border-blue-900 active:translate-y-2 transition-all">
+                            {currentIndex === 2 ? "SYSTEM COMPLETE!" : "NEXT DATABASE"} <i className="fas fa-chevron-right ml-2"></i>
                         </button>
                     </div>
                 </div>
@@ -325,53 +335,50 @@
             const renderScreen = () => {
                 switch(currentScreen) {
                     case 'menu': return (
-                        <div className="h-full flex flex-col items-center justify-center p-6 jungle-gradient relative overflow-hidden">
-                            {/* --- BACKGROUND ANIMATION CONTAINER --- */}
+                        <div className="h-full flex flex-col items-center justify-center p-6 circuit-gradient relative overflow-hidden">
+                            <div className="scanline"></div>
+                            {/* BACKGROUND ANIMATION CONTAINER */}
                             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                                {/* Partikel Daun dan Jejak Kaki yang mengapung */}
-                                <i className="fas fa-leaf text-emerald-300/20 absolute text-4xl bg-particle" style={{left: '10%', animationDuration: '15s', animationDelay: '0s'}}></i>
-                                <i className="fas fa-paw text-emerald-400/10 absolute text-3xl bg-particle" style={{left: '25%', animationDuration: '18s', animationDelay: '2s', fontSize: '2rem'}}></i>
-                                <i className="fas fa-leaf text-emerald-300/20 absolute text-5xl bg-particle" style={{left: '40%', animationDuration: '20s', animationDelay: '5s'}}></i>
-                                <i className="fas fa-paw text-emerald-400/10 absolute text-4xl bg-particle" style={{left: '60%', animationDuration: '14s', animationDelay: '1s'}}></i>
-                                <i className="fas fa-leaf text-emerald-300/20 absolute text-3xl bg-particle" style={{left: '75%', animationDuration: '17s', animationDelay: '3s'}}></i>
-                                <i className="fas fa-paw text-emerald-400/10 absolute text-5xl bg-particle" style={{left: '90%', animationDuration: '19s', animationDelay: '6s'}}></i>
-                                 {/* Elemen Statis yang ada sebelumnya (sedikit disesuaikan z-indexnya) */}
-                                <div className="absolute -top-20 -left-20 w-64 h-64 bg-white/5 rounded-full blur-3xl z-0"></div>
-                                <div className="absolute top-10 right-10 opacity-20 text-white text-9xl rotate-12 z-0"><i className="fas fa-dragon"></i></div>
+                                <i className="fas fa-cog text-blue-300/10 absolute text-4xl bg-particle" style={{left: '10%', animationDuration: '10s', animationDelay: '0s'}}></i>
+                                <i className="fas fa-bolt text-cyan-400/10 absolute text-3xl bg-particle" style={{left: '25%', animationDuration: '12s', animationDelay: '2s'}}></i>
+                                <i className="fas fa-gear text-blue-300/10 absolute text-5xl bg-particle" style={{left: '45%', animationDuration: '15s', animationDelay: '5s'}}></i>
+                                <i className="fas fa-wrench text-slate-400/10 absolute text-4xl bg-particle" style={{left: '65%', animationDuration: '11s', animationDelay: '1s'}}></i>
+                                <i className="fas fa-cog text-blue-300/10 absolute text-3xl bg-particle" style={{left: '80%', animationDuration: '14s', animationDelay: '3s'}}></i>
+                                
+                                <div className="absolute -top-20 -left-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl z-0"></div>
+                                <div className="absolute top-10 right-10 opacity-10 text-white text-9xl rotate-12 z-0"><i className="fas fa-robot"></i></div>
                             </div>
                             
-                            {/* Tombol Settings (z-index dinaikkan agar di atas animasi) */}
-                            <button onClick={() => setShowSettings(true)} className="absolute top-6 right-6 bg-white/10 p-3 rounded-full text-white backdrop-blur-md border border-white/20 transition hover:bg-white/30 z-30"><i className="fas fa-cog text-2xl"></i></button>
+                            <button onClick={() => setShowSettings(true)} className="absolute top-6 right-6 bg-white/10 p-3 rounded-full text-white backdrop-blur-md border border-white/20 transition hover:bg-white/30 z-30"><i className="fas fa-user-robot text-2xl"></i></button>
                             
-                            {/* Konten Utama Menu (z-index dinaikkan) */}
                             <div className="text-center mb-10 animate-pop z-20">
-                                <h1 className="text-7xl font-black text-white drop-shadow-lg font-hand mb-2 tracking-tighter" style={{textShadow: '6px 6px 0 #14532d'}}>BACALIS</h1>
-                                <div className="bg-amber-400 px-6 py-2 rounded-full inline-block border-b-4 border-amber-600"><p className="text-emerald-900 font-black text-xs tracking-widest uppercase">Petualangan Dino Baca</p></div>
-                                <div className="mt-4"><span className="bg-orange-500 text-white px-4 py-1 rounded-lg text-sm font-black uppercase shadow-lg">ZAMAN JURA</span></div>
+                                <h1 className="text-7xl font-black text-white drop-shadow-lg font-mono-tech mb-2 tracking-tighter" style={{textShadow: '6px 6px 0 #1e40af'}}>BACALIS</h1>
+                                <div className="bg-blue-600 px-6 py-2 rounded-full inline-block border-b-4 border-blue-800"><p className="text-white font-black text-xs tracking-widest uppercase">Misi Belajar Robot</p></div>
+                                <div className="mt-4"><span className="bg-cyan-500 text-white px-4 py-1 rounded-lg text-sm font-black uppercase shadow-lg">ERA TEKNOLOGI</span></div>
                             </div>
                             
                             {showSettings && (
-                                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-emerald-950/80 backdrop-blur-sm">
-                                    <div className="bg-white rounded-[40px] p-6 w-full max-w-sm shadow-2xl border-t-8 border-amber-400">
-                                        <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-black text-emerald-900 uppercase tracking-tighter">Pilih Guide Dino</h3><button onClick={() => setShowSettings(false)} className="text-stone-300 hover:text-red-500 text-2xl"><i className="fas fa-times-circle"></i></button></div>
+                                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-sm">
+                                    <div className="bg-white rounded-[40px] p-6 w-full max-w-sm shadow-2xl border-t-8 border-blue-500">
+                                        <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Pilih Unit AI</h3><button onClick={() => setShowSettings(false)} className="text-slate-300 hover:text-red-500 text-2xl"><i className="fas fa-times-circle"></i></button></div>
                                         <div className="grid grid-cols-2 gap-4">
-                                            {[ {l:'Dino 1', i:'🦖'}, {l:'Dino 2', i:'🦕'}, {l:'Dino 3', i:'🐉'}, {l:'Dino 4', i:'🐊'} ].map((v, i) => (
-                                                <button key={i} onClick={() => { setVoiceIndex(i); speak('Halo Petualang, saya teman dinosaurusmu nomor ' + (i+1), i); }}
-                                                    className={`p-4 rounded-[25px] flex flex-col items-center gap-2 border-4 transition-all ${voiceIndex === i ? 'border-amber-400 bg-amber-50 scale-105 shadow-lg' : 'border-transparent bg-stone-50 opacity-60'}`}>
-                                                    <span className="text-4xl">{v.i}</span><span className="font-black text-[10px] uppercase text-emerald-900">{v.l}</span>
+                                            {[ {l:'Unit 1', i:'🤖'}, {l:'Unit 2', i:'🛰️'}, {l:'Unit 3', i:'💻'}, {l:'Unit 4', i:'🛸'} ].map((v, i) => (
+                                                <button key={i} onClick={() => { setVoiceIndex(i); speak('Halo Petualang, saya asisten robotmu nomor ' + (i+1), i); }}
+                                                    className={`p-4 rounded-[25px] flex flex-col items-center gap-2 border-4 transition-all ${voiceIndex === i ? 'border-blue-500 bg-blue-50 scale-105 shadow-lg' : 'border-transparent bg-slate-50 opacity-60'}`}>
+                                                    <span className="text-4xl">{v.i}</span><span className="font-black text-[10px] uppercase text-slate-900">{v.l}</span>
                                                 </button>
                                             ))}
                                         </div>
-                                        <button onClick={() => setShowSettings(false)} className="w-full mt-6 bg-emerald-700 text-white font-black py-4 rounded-2xl shadow-lg border-b-4 border-emerald-900 active:scale-95">MULAI PETUALANGAN</button>
+                                        <button onClick={() => setShowSettings(false)} className="w-full mt-6 bg-blue-700 text-white font-black py-4 rounded-2xl shadow-lg border-b-4 border-blue-900 active:scale-95">BOOT SYSTEM</button>
                                     </div>
                                 </div>
                             )}
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl z-20">
-                                <MenuCard title="JEJAK ABJAD" subtitle="Huruf A - Z" color="bg-amber-400 border-amber-600" icon="fa-font" onClick={() => setCurrentScreen('alphabet')} />
-                                <MenuCard title="TELUR VOKAL" subtitle="A I U E O" color="bg-orange-400 border-orange-600" icon="fa-egg" onClick={() => setCurrentScreen('vowel')} />
-                                <MenuCard title="SUKU KATA" subtitle="Ba - Ca - Da" color="bg-emerald-500 border-emerald-700" icon="fa-paw" onClick={() => setCurrentScreen('syllableMenu')} />
-                                <MenuCard title="GUA BACA" subtitle="Latihan Kalimat" color="bg-stone-500 border-stone-700" icon="fa-mountain" onClick={() => setCurrentScreen('reflection')} />
+                                <MenuCard title="DATA ABJAD" subtitle="Karakter A - Z" color="bg-blue-600 border-blue-800" icon="fa-microchip" onClick={() => setCurrentScreen('alphabet')} />
+                                <MenuCard title="BATERAI VOKAL" subtitle="A I U E O" color="bg-cyan-600 border-cyan-800" icon="fa-battery-three-quarters" onClick={() => setCurrentScreen('vowel')} />
+                                <MenuCard title="SUKU KATA" subtitle="Ba - Ca - Da" color="bg-slate-700 border-slate-900" icon="fa-code-branch" onClick={() => setCurrentScreen('syllableMenu')} />
+                                <MenuCard title="LAB BACA" subtitle="Optimasi Kalimat" color="bg-indigo-600 border-indigo-800" icon="fa-flask" onClick={() => setCurrentScreen('reflection')} />
                             </div>
                         </div>
                     );
@@ -386,18 +393,18 @@
         };
 
         const SyllableMenu = ({ onBack, onSelect }) => (
-            <div className="h-full flex flex-col bg-[#fefce8]">
-                <div className="flex items-center justify-between p-4 bg-emerald-800 text-white shadow-lg sticky top-0 z-20">
-                    <button onClick={onBack} className="bg-amber-500 text-white w-10 h-10 rounded-full shadow border-2 border-amber-300"><i className="fas fa-arrow-left"></i></button>
-                    <h1 className="text-xl font-black tracking-tighter uppercase">MAP PETUALANGAN 🗺️</h1><div className="w-10"></div>
+            <div className="h-full flex flex-col bg-slate-50">
+                <div className="flex items-center justify-between p-4 bg-slate-800 text-white shadow-lg sticky top-0 z-20">
+                    <button onClick={onBack} className="bg-blue-500 text-white w-10 h-10 rounded-full shadow border-2 border-blue-300"><i className="fas fa-arrow-left"></i></button>
+                    <h1 className="text-xl font-black tracking-tighter uppercase">MAP DATABASE 🛰️</h1><div className="w-10"></div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4">
                     <div className="grid grid-cols-3 md:grid-cols-4 gap-4 pb-10">
                         {syllableData.map(item => (
-                            <div key={item.id} onClick={() => onSelect(item)} className="bg-white rounded-[25px] shadow-lg p-4 flex flex-col items-center justify-center cursor-pointer border-b-8 border-emerald-600 transition active:translate-y-2">
-                                <span className="text-4xl font-black text-emerald-900 uppercase mb-1">{item.syllable}</span>
-                                <div className="h-1 w-8 bg-amber-400 rounded-full mb-1"></div>
-                                <span className="text-[10px] text-stone-400 font-bold uppercase">{item.word}</span>
+                            <div key={item.id} onClick={() => onSelect(item)} className="bg-white rounded-[25px] shadow-lg p-4 flex flex-col items-center justify-center cursor-pointer border-b-8 border-slate-700 transition active:translate-y-2">
+                                <span className="text-4xl font-black text-slate-800 uppercase mb-1">{item.syllable}</span>
+                                <div className="h-1 w-8 bg-blue-500 rounded-full mb-1"></div>
+                                <span className="text-[10px] text-slate-400 font-bold uppercase">{item.word}</span>
                             </div>
                         ))}
                     </div>
