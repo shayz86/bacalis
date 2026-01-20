@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bacalis - Belajar Baca Tulis (Racing Theme)</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+
+    <style>
+        body { 
+            font-family: 'Fredoka', sans-serif; 
+            background-color: #111827; /* Zinc 900 - Aspal Deep */
+            color: #f8fafc; 
+            overscroll-behavior: none; user-select: none; -webkit-user-select: none; 
+            background-image: linear-gradient(to bottom, #1e293b, #111827, #020617);
+            background-attachment: fixed;
+        }
+        canvas { touch-action: none; cursor: crosshair; }
+        .font-hand { font-family: 'Patrick Hand', cursive; }
+        .animate-pop { animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes pop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        
+        /* Tekstur Bendera Balap (Checkered) */
+        .checkered-pattern {
+            background-image: 
+                linear-gradient(45deg, #000 25%, transparent 25%), 
+                linear-gradient(-45deg, #000 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #000 75%), 
+                linear-gradient(-45deg, transparent 75%, #000 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            opacity: 0.1;
+        }
+
+        /* Animasi Partikel Kecepatan (Ganti Gelembung) */
+        .speed-line {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.4);
+            border-radius: 2px;
+            pointer-events: none;
+            animation: moveSpeed infinite linear;
+            z-index: 0;
+        }
+
+        @keyframes moveSpeed {
+            0% {
+                transform: translateY(100vh) scaleY(1);
+                opacity: 0;
+            }
+            10% { opacity: 0.8; }
+            90% { opacity: 0.8; }
+            100% {
+                transform: translateY(-20vh) scaleY(2);
+                opacity: 0;
+            }
+        }
+
+        /* Gaya Tombol Racing */
+        .btn-racing {
+            border-bottom: 6px solid rgba(0,0,0,0.3);
+            transition: all 0.1s;
+        }
+        .btn-racing:active {
+            transform: translateY(4px);
+            border-bottom-width: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // --- GLOBAL UTILS ---
+        const speak = (text, voiceIndex = 0) => {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                let phoneticText = text.toLowerCase();
+                phoneticText = phoneticText.replace(/\bbe\b/g, 'beh');
+                phoneticText = phoneticText.replace(/\bme\b/g, 'meh');
+                if (phoneticText === 'c') { phoneticText = 'ce'; } 
+                else { phoneticText = phoneticText.replace(/c/g, 'ch'); }
+                
+                const utterance = new SpeechSynthesisUtterance(phoneticText);
+                utterance.lang = 'id-ID';
+                utterance.rate = 0.9; // Sedikit lebih cepat untuk tema balap
+                const voices = window.speechSynthesis.getVoices();
+                const idVoices = voices.filter(v => v.lang.includes('id') || v.lang.includes('ID'));
+                if (idVoices.length > 0) { utterance.voice = idVoices[voiceIndex] || idVoices[0]; }
+                window.speechSynthesis.speak(utterance);
+            }
+        };
+
+        // --- DATA (TETAP SAMA) ---
+        const alphabetData = Array.from({ length: 26 }, (_, i) => ({
+            char: String.fromCharCode(65 + i),
+            isVowel: ['A', 'I', 'U', 'E', 'O'].includes(String.fromCharCode(65 + i))
+        }));
+
+        const syllableData = [
+            { id: 'o',  syllable: 'o',  word: 'obat',   emoji: '💊', pattern: [['o', 'ba'], ['o', 'ri'], ['o', 'la'], ['o', 'to'], ['sot', 'o'], ['bo', 'ro'], ['to', 'ko'], ['fo', 'to'], ['ro', 'da']]},
+            { id: 'bo', syllable: 'bo', word: 'bola',   emoji: '⚽', pattern: [['bo', 'la'], ['bo', 'bi'], ['bo', 'ni'], ['bo', 'bo'], ['te', 'bo'], ['lo', 'bo'], ['bo', 'ra'], ['bo', 'sa']] },
+            { id: 'co', syllable: 'co', word: 'coklat',   emoji: '🍫', pattern: [['co', 'ba'], ['co', 'co'], ['co', 'li'], ['co', 're'], ['be', 'co'], ['le', 'co'], ['co', 'ma'], ['co', 'na']] },
+            { id: 'do', syllable: 'do', word: 'donat',  emoji: '🍩', pattern: [['do', 'na'], ['do', 'sa'], ['do', 'mi'], ['do', 'do'], ['i', 'do'], ['gu', 'do'], ['do', 'ra'], ['do', 'ka']] },
+            { id: 'fo', syllable: 'fo', word: 'foto',   emoji: '📷', pattern: [['fo', 'to'], ['fo', 'ra'], ['fo', 'ni'], ['fo', 'bi'], ['ca', 'fo'], ['fo', 'si'], ['fo', 'da'], ['fo', 'la']] },
+            { id: 'go', syllable: 'go', word: 'golf',   emoji: '⛳', pattern: [['go', 'ni'], ['go', 'go'], ['go', 're'], ['go', 'ma'], ['ta', 'go'], ['go', 'si'], ['go', 'ra'], ['ja', 'go']] },
+            { id: 'ho', syllable: 'ho', word: 'hotel',   emoji: '🏨', pattern: [['ho', 'bi'], ['ho', 'ni'], ['ho', 'ma'], ['ho', 'ho'], ['ja', 'ho'], ['lo', 'ho'], ['ho', 'da'], ['ho', 'sa']] },
+            { id: 'jo', syllable: 'jo', word: 'joran',  emoji: '🎣', pattern: [['jo', 'ra'], ['jo', 'ri'], ['jo', 'la'], ['jo', 'jo'], ['ba', 'jo'], ['be', 'jo'], ['me', 'jo'], ['se', 'jo']] },
+            { id: 'ko', syllable: 'ko', word: 'kopi',   emoji: '☕', pattern: [['ko', 'pi'], ['ko', 'ta'], ['ko', 'na'], ['ko', 'ko'], ['ja', 'ko'], ['ba', 'ko'], ['ko', 're'], ['ko', 'se']] },
+            { id: 'lo', syllable: 'lo', word: 'lolipop',   emoji: '🍭', pattern: [['lo', 'lo'], ['lo', 'ra'], ['lo', 'na'], ['lo', 'bi'], ['ja', 'lo'], ['ba', 'lo'], ['lo', 'si'], ['lo', 'ga']] },
+            { id: 'mo', syllable: 'mo', word: 'mobil',  emoji: '🚗', pattern: [['mo', 'ga'], ['mo', 'ra'], ['mo', 'ni'], ['mo', 'mo'], ['ka', 'mo'], ['sa', 'mo'], ['mo', 'bi'], ['mo', 'de']] },
+            { id: 'no', syllable: 'no', word: 'nona',   emoji: '👩', pattern: [['no', 'na'], ['no', 'no'], ['no', 'ra'], ['no', 'ni'], ['pa', 'no'], ['ba', 'no'], ['no', 'la'], ['no', 'sa']] },
+            { id: 'po', syllable: 'po', word: 'pohon',  emoji: '🌳', pattern: [['po', 'ni'], ['po', 'ra'], ['po', 'po'], ['po', 'na'], ['ja', 'po'], ['ca', 'po'], ['po', 'si'], ['po', 'la']] },
+            { id: 'qo', syllable: 'qo', word: 'qori',   emoji: '🎤', pattern: [['qo', 'ri'], ['qo', 'ra'], ['qo', 'qo'], ['qo', 'sa'], ['ba', 'qo'], ['qa', 'qo'], ['qi', 'qo'], ['qo', 're']] },
+            { id: 'ro', syllable: 'ro', word: 'roti',   emoji: '🍞', pattern: [['ro', 'da'], ['ro', 'ro'], ['ro', 'na'], ['ro', 'ni'], ['sa', 'ro'], ['ja', 'ro'], ['ro', 'si'], ['ro', 'ka']] },
+            { id: 'so', syllable: 'so', word: 'soto',   emoji: '🥣', pattern: [['so', 'to'], ['so', 're'], ['so', 'na'], ['so', 'so'], ['be', 'so'], ['me', 'so'], ['so', 'ra'], ['so', 'la']] },
+            { id: 'to', syllable: 'to', word: 'topi',   emoji: '🎩', pattern: [['to', 'pi'], ['to', 'to'], ['to', 'ra'], ['to', 'ko'], ['sa', 'to'], ['ja', 'to'], ['to', 'ma'], ['to', 'na']] },
+            { id: 'vo', syllable: 'vo', word: 'voli',   emoji: '🏐', pattern: [['vo', 'li'], ['vo', 'ra'], ['vo', 'ni'], ['vo', 'la'], ['ca', 'vo'], ['de', 'vo'], ['vo', 'si'], ['vo', 'ka']] },
+            { id: 'wo', syllable: 'wo', word: 'wortel', emoji: '🥕', pattern: [['wo', 'wo'], ['wo', 'ra'], ['wo', 'ni'], ['wo', 'la'], ['ba', 'wo'], ['ja', 'wo'], ['wo', 'si'], ['wo', 'ka']] },
+            { id: 'xo', syllable: 'xo', word: 'xylo',   emoji: '🎹', pattern: [['xo', 'na'], ['xo', 'ra'], ['xo', 'xo'], ['xo', 'la'], ['ba', 'xo'], ['xa', 'xo'], ['xo', 'si'], ['xo', 'ka']] },
+            { id: 'yo', syllable: 'yo', word: 'yoyo',   emoji: '🪀', pattern: [['yo', 'yo'], ['yo', 'ra'], ['yo', 'ni'], ['yo', 'la'], ['ba', 'yo'], ['sa', 'yo'], ['yo', 'si'], ['yo', 'ka']] },
+            { id: 'zo', syllable: 'zo', word: 'zona',   emoji: '🚧', pattern: [['zo', 'ra'], ['zo', 'zo'], ['zo', 'na'], ['zo', 'ni'], ['ba', 'zo'], ['za', 'zo'], ['zo', 'si'], ['zo', 'la']] },
+        ];
+
+        const reflectionDataRaw = [
+            ["nona beli soto", "roda mobil baru", "kopi rasa gula", "bobi main bola", "toko jualan roti"],
+            ["foto rani lucu", "topi biru papa", "hobi rudi lari", "sore hari sepi", "nona baca nota"],
+            ["joran pancing baru", "donat rasa madu", "bola dudu biru", "mobi beli roti", "yoyo rudi baru"],
+            ["obor bawa api", "goni isi padi", "soto ayam enak", "nona cari koki", "toko buka pagi"],
+            ["roda tiga rani", "bobi suka soto", "kopi susu mama", "roti rasa madu", "topi koko baru"]
+        ];
+
+        // --- COMPONENTS ---
+
+        const BackgroundSpeed = () => {
+            const particles = useMemo(() => {
+                return Array.from({ length: 15 }).map((_, i) => ({
+                    id: i,
+                    left: Math.random() * 100 + '%',
+                    width: '2px',
+                    height: Math.random() * 80 + 20 + 'px',
+                    duration: Math.random() * 0.5 + 0.3 + 's',
+                    delay: Math.random() * 2 + 's'
+                }));
+            }, []);
+
+            return (
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    {particles.map(p => (
+                        <div
+                            key={p.id}
+                            className="speed-line"
+                            style={{
+                                left: p.left,
+                                width: p.width,
+                                height: p.height,
+                                animationDuration: p.duration,
+                                animationDelay: p.delay
+                            }}
+                        />
+                    ))}
+                </div>
+            );
+        };
+
+        const DrawingCanvas = ({ width, height, traceText, title, className, penColor = "#ef4444", fontSize = 60 }) => {
+            const canvasRef = useRef(null);
+            const [isDrawing, setIsDrawing] = useState(false);
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = width * dpr; canvas.height = height * dpr;
+                canvas.style.width = `${width}px`; canvas.style.height = `${height}px`;
+                ctx.scale(dpr, dpr); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.lineWidth = 5;
+                if (traceText) {
+                    ctx.font = `bold ${fontSize}px 'Fredoka', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                    ctx.fillStyle = "#cbd5e1"; ctx.strokeStyle = "#94a3b8"; ctx.setLineDash([10, 5]); ctx.lineWidth = 2;
+                    ctx.fillText(traceText, width / 2, height / 2); ctx.strokeText(traceText, width / 2, height / 2);
+                    ctx.setLineDash([]); ctx.lineWidth = 6;
+                }
+            }, [width, height, traceText, fontSize]);
+
+            const getTouchPos = (canvas, evt) => {
+                const rect = canvas.getBoundingClientRect();
+                return { x: (evt.touches[0].clientX - rect.left), y: (evt.touches[0].clientY - rect.top) };
+            };
+            const startDrawing = (e) => {
+                const canvas = canvasRef.current; const ctx = canvas.getContext('2d');
+                ctx.strokeStyle = penColor; ctx.lineWidth = 6;
+                let x, y; if (e.nativeEvent.touches) { const pos = getTouchPos(canvas, e.nativeEvent); x = pos.x; y = pos.y; }
+                else { x = e.nativeEvent.offsetX; y = e.nativeEvent.offsetY; }
+                ctx.beginPath(); ctx.moveTo(x, y); setIsDrawing(true);
+            };
+            const draw = (e) => {
+                if (!isDrawing) return; const canvas = canvasRef.current; const ctx = canvas.getContext('2d');
+                let x, y; if (e.nativeEvent.touches) { const pos = getTouchPos(canvas, e.nativeEvent); x = pos.x; y = pos.y; }
+                else { x = e.nativeEvent.offsetX; y = e.nativeEvent.offsetY; }
+                ctx.lineTo(x, y); ctx.stroke();
+            };
+            const clearCanvas = () => {
+                const canvas = canvasRef.current; const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                if (traceText) {
+                    const dpr = window.devicePixelRatio || 1; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.scale(dpr, dpr);
+                    ctx.font = `bold ${fontSize}px 'Fredoka', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                    ctx.fillStyle = "#cbd5e1"; ctx.strokeStyle = "#94a3b8"; ctx.setLineDash([10, 5]); ctx.lineWidth = 2;
+                    ctx.fillText(traceText, width/2, height/2); ctx.strokeText(traceText, width/2, height/2);
+                    ctx.setLineDash([]); ctx.strokeStyle = penColor; ctx.lineWidth = 6;
+                }
+            };
+            return (
+                <div className={`relative flex flex-col items-center ${className}`}>
+                    <canvas ref={canvasRef} onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={() => setIsDrawing(false)}
+                        onMouseLeave={() => setIsDrawing(false)} onTouchStart={startDrawing} onTouchMove={draw}
+                        onTouchEnd={() => setIsDrawing(false)} className="bg-zinc-100 rounded-xl shadow-inner border-2 border-zinc-400 touch-none" />
+                    <button onClick={clearCanvas} className="absolute -top-3 -right-3 bg-red-600 text-white w-9 h-9 rounded-full text-sm shadow-xl z-10 flex items-center justify-center border-2 border-white"><i className="fas fa-eraser"></i></button>
+                </div>
+            );
+        };
+
+        const AlphabetScreen = ({ onBack, filterVowel, voiceIndex }) => {
+            const data = filterVowel 
+                ? [{char: 'A', isVowel: true}, {char: 'I', isVowel: true}, {char: 'U', isVowel: true}, {char: 'E', isVowel: true}, {char: 'O', isVowel: true}]
+                : alphabetData;
+
+            return (
+                <div className="h-full flex flex-col bg-zinc-900">
+                    <div className="flex items-center justify-between p-4 bg-red-700 shadow-lg sticky top-0 z-20 border-b-4 border-black">
+                        <button onClick={onBack} className="bg-zinc-900 text-white w-10 h-10 rounded-lg shadow-lg border-2 border-white active:scale-95 transition-transform">
+                            <i className="fas fa-chevron-left"></i>
+                        </button>
+                        <h1 className="text-2xl font-black text-white italic uppercase tracking-tighter">
+                            {filterVowel ? "Gigi Vokal" : "Pit Stop Abjad"}
+                        </h1>
+                        <div className="w-10"></div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 relative">
+                        <div className="absolute inset-0 checkered-pattern"></div>
+                        <div className="relative z-10 flex flex-wrap justify-center gap-4">
+                            {data.map(item => (
+                                <div key={item.char} onClick={() => speak(item.char.toLowerCase(), voiceIndex)}
+                                    className={`
+                                        ${filterVowel ? 'w-[42%]' : 'w-[28%] md:w-[15%]'} 
+                                        aspect-square rounded-xl flex flex-col items-center justify-center shadow-2xl cursor-pointer
+                                        transform transition hover:scale-105 active:scale-95 border-b-4 border-black/40
+                                        ${item.isVowel ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-zinc-900' : 'bg-zinc-800 text-red-500 border-2 border-zinc-700'}
+                                    `}
+                                >
+                                    <span className="text-6xl md:text-7xl font-black italic drop-shadow-lg">{item.char}</span>
+                                    {item.isVowel && <span className="text-xs font-black bg-black text-white px-2 py-0.5 rounded mt-1">TURBO</span>}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SyllableLesson = ({ data, onBack, voiceIndex }) => {
+            useEffect(() => { speak(`${data.syllable}. ${data.word}`, voiceIndex); }, [data, voiceIndex]);
+            const [canvasSize, setCanvasSize] = useState({ width: 300, height: 150 });
+            const [dikteSize, setDikteSize] = useState({ width: 100, height: 100 });
+            useEffect(() => {
+                const handleResize = () => {
+                    const width = window.innerWidth;
+                    if (width < 640) { setCanvasSize({ width: width - 48, height: 140 }); const dikteW = (width - 64) / 3; setDikteSize({ width: dikteW, height: dikteW }); }
+                    else { setCanvasSize({ width: 600, height: 200 }); setDikteSize({ width: 150, height: 150 }); }
+                };
+                handleResize(); window.addEventListener('resize', handleResize); return () => window.removeEventListener('resize', handleResize);
+            }, []);
+
+            return (
+                <div className="h-full flex flex-col bg-zinc-950">
+                    <div className="flex items-center justify-between p-3 bg-zinc-900 shadow-md sticky top-0 z-30 border-b-4 border-red-600">
+                        <button onClick={onBack} className="bg-red-600 text-white w-10 h-10 rounded-lg shadow-lg active:scale-90"><i className="fas fa-flag-checkered"></i></button>
+                        <h1 className="text-xl md:text-2xl font-black text-white italic">LAP: <span className="text-yellow-400">{data.syllable.toUpperCase()}</span></h1>
+                        <button onClick={() => speak(data.word, voiceIndex)} className="bg-zinc-100 text-zinc-900 w-10 h-10 rounded-full shadow-lg border-2 border-red-600"><i className="fas fa-volume-up"></i></button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto pb-20 relative">
+                        <div className="max-w-3xl mx-auto p-4 space-y-8 relative z-10">
+                            <div className="bg-gradient-to-r from-red-800 to-zinc-900 rounded-2xl shadow-2xl p-6 flex flex-col md:flex-row items-center gap-6 border-l-8 border-red-500">
+                                <div className="w-40 h-40 md:w-48 md:h-48 rounded-2xl overflow-hidden border-4 border-white shadow-2xl bg-zinc-100 shrink-0 flex items-center justify-center">
+                                    <span className="emoji-display drop-shadow-2xl transform hover:rotate-12 transition-transform cursor-pointer" 
+                                        onClick={() => speak(data.word, voiceIndex)}>{data.emoji}</span>
+                                </div>
+                                <div className="text-center md:text-left flex-1">
+                                    <div className="flex flex-col mb-2">
+                                        <span className="text-8xl font-black text-yellow-400 italic font-hand leading-none">{data.syllable}</span>
+                                        <span className="text-4xl font-bold text-white uppercase tracking-widest">{data.word}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-2"><div className="bg-red-600 text-white p-2 rounded shadow"><i className="fas fa-tachometer-alt"></i></div><h3 className="text-xl font-bold text-white uppercase italic">Melaju di Lintasan</h3></div>
+                                <div className="bg-zinc-100 rounded-xl p-4 border-4 border-zinc-800 grid grid-cols-2 gap-4">
+                                    {data.pattern.map((row, idx) => (
+                                        <div key={idx} className="flex flex-col items-center justify-center p-3 bg-white shadow-md rounded-lg border-b-4 border-zinc-300">
+                                            <div className="flex flex-wrap justify-center text-2xl md:text-3xl font-black text-zinc-900 italic">
+                                                {row.map((syl, sIdx) => (
+                                                    <span key={sIdx} className="hover:text-red-600 cursor-pointer" onClick={() => speak(syl, voiceIndex)}>
+                                                        {syl}{sIdx < row.length - 1 ? '-' : ''}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            <span className="text-[10px] md:text-xs text-zinc-400 font-black uppercase tracking-widest mt-1 cursor-pointer"
+                                                onClick={() => speak(row.join('. '), voiceIndex)}>{row.join('')}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-2"><div className="bg-yellow-500 text-black p-2 rounded shadow"><i className="fas fa-paint-brush"></i></div><h3 className="text-xl font-bold text-white uppercase italic">Mengukir Aspal</h3></div>
+                                <div className="bg-zinc-900 rounded-2xl p-4 border-4 border-zinc-800 flex flex-col items-center gap-6">
+                                    <DrawingCanvas width={canvasSize.width} height={canvasSize.height} traceText={`${data.syllable}  ${data.syllable}`} penColor="#ef4444" fontSize={80} />
+                                    <DrawingCanvas width={canvasSize.width} height={canvasSize.height} traceText={`${data.syllable}  ${data.syllable}`} penColor="#ef4444" fontSize={80} />
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-2"><div className="bg-white text-black p-2 rounded shadow"><i className="fas fa-flag-checkered"></i></div><h3 className="text-xl font-bold text-white uppercase italic">Garis Finish</h3></div>
+                                <div className="bg-zinc-900 rounded-2xl p-4 border-4 border-zinc-800 grid grid-cols-3 gap-3 justify-items-center">
+                                    {Array(6).fill(0).map((_, i) => <DrawingCanvas key={i} width={dikteSize.width} height={dikteSize.height} penColor="#ef4444" className="shadow-lg" />)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ReflectionScreen = ({ onBack, voiceIndex }) => {
+            const [pages, setPages] = useState([]); const [currentIndex, setCurrentIndex] = useState(0);
+            useEffect(() => { const shuffled = [...reflectionDataRaw].sort(() => 0.5 - Math.random()); setPages(shuffled.slice(0, 3)); }, []);
+            if (pages.length === 0) return null;
+            const currentData = pages[currentIndex];
+            return (
+                <div className="h-full flex flex-col bg-zinc-950">
+                    <div className="flex items-center justify-between p-4 bg-zinc-900 shadow-xl sticky top-0 z-20 border-b-4 border-yellow-500">
+                        <button onClick={onBack} className="bg-red-600 text-white w-10 h-10 rounded-lg shadow-lg"><i className="fas fa-times"></i></button>
+                        <h1 className="text-2xl font-black text-white italic uppercase">PODIUM BACA</h1>
+                        <span className="font-black text-zinc-900 bg-yellow-400 px-3 py-1 rounded-lg">LAP {currentIndex + 1}</span>
+                    </div>
+                    <div className="flex-1 flex flex-col justify-center p-6 max-w-2xl mx-auto w-full relative">
+                        <div className="absolute inset-0 checkered-pattern opacity-5"></div>
+                        <div className="bg-zinc-100 p-8 rounded-3xl shadow-2xl border-l-8 border-red-600 space-y-6 relative z-10">
+                            {currentData.map((sentence, idx) => (
+                                <div key={idx} onClick={() => speak(sentence, voiceIndex)} className="text-2xl font-bold text-zinc-900 border-b-2 border-zinc-200 pb-3 pl-4 cursor-pointer hover:bg-zinc-200 rounded transition flex items-start gap-3">
+                                    <i className="fas fa-caret-right text-red-600 mt-2"></i>{sentence}
+                                </div>
+                            ))}
+                        </div>
+                        <button onClick={() => currentIndex < 2 ? setCurrentIndex(i => i+1) : onBack()} className="mt-8 bg-red-600 text-white font-black py-5 rounded-2xl shadow-2xl w-full text-2xl uppercase italic hover:bg-red-700 active:scale-95 transition-all border-b-8 border-red-900">
+                            {currentIndex === 2 ? "FINISH!" : "Gas Pol!"} <i className="fas fa-bolt ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [currentScreen, setCurrentScreen] = useState('menu'); 
+            const [selectedSyllable, setSelectedSyllable] = useState(null);
+            const [showSettings, setShowSettings] = useState(false);
+            const [voiceIndex, setVoiceIndex] = useState(parseInt(localStorage.getItem('bacalisVoiceIndex')) || 0);
+
+            useEffect(() => { localStorage.setItem('bacalisVoiceIndex', voiceIndex); }, [voiceIndex]);
+            useEffect(() => { const loadV = () => window.speechSynthesis.getVoices(); loadV(); window.speechSynthesis.onvoiceschanged = loadV; }, []);
+
+            const renderScreen = () => {
+                switch(currentScreen) {
+                    case 'menu': return (
+                        <div className="h-full flex flex-col items-center justify-center p-6 bg-gradient-to-br from-red-600 via-zinc-900 to-black relative overflow-hidden">
+                            <BackgroundSpeed />
+                            <div className="absolute inset-0 checkered-pattern opacity-10"></div>
+                            
+                            <button onClick={() => setShowSettings(true)} className="absolute top-6 right-6 bg-white/20 p-4 rounded-xl text-white backdrop-blur-md transition hover:bg-white/30 z-10 border border-white/20"><i className="fas fa-cog text-2xl"></i></button>
+                            
+                            <div className="text-center mb-10 animate-pop z-10 relative">
+                                <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex gap-4 text-yellow-400 opacity-50 text-4xl">
+                                    <i className="fas fa-bolt"></i><i className="fas fa-bolt"></i><i className="fas fa-bolt"></i>
+                                </div>
+                                <h1 className="text-8xl font-black text-white italic tracking-tighter mb-2" style={{textShadow: '6px 6px 0 #991b1b'}}>BACALIS</h1>
+                                <div className="bg-red-600 px-6 py-1 rounded-sm transform -skew-x-12 inline-block border-2 border-white shadow-xl"><p className="text-white font-black italic text-xl uppercase tracking-widest">Racing Edition</p></div>
+                                <div className="mt-4"><span className="bg-yellow-400 text-black px-4 py-1 rounded-full text-sm font-black uppercase shadow-lg">Lap 5</span></div>
+                            </div>
+                            
+                            {showSettings && (
+                                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
+                                    <div className="bg-zinc-100 rounded-3xl p-6 w-full max-w-sm shadow-2xl border-t-8 border-red-600">
+                                        <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-black text-zinc-900 uppercase italic">Pilih Co-Driver</h3><button onClick={() => setShowSettings(false)} className="text-zinc-400 hover:text-red-600 text-3xl"><i className="fas fa-times-circle"></i></button></div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {[ {l:'F1 Red', i:'🏎️'}, {l:'Helmet', i:'🪖'}, {l:'Trophy', i:'🏆'}, {l:'Nitro', i:'🔥'} ].map((v, i) => (
+                                                <button key={i} onClick={() => { setVoiceIndex(i); speak('Siap di garis start? Ayo mulai balapan membaca!', i); }}
+                                                    className={`p-4 rounded-xl flex flex-col items-center gap-2 border-4 transition-all ${voiceIndex === i ? 'border-red-600 bg-red-50 scale-105 shadow-xl' : 'border-zinc-200 bg-white opacity-60'}`}>
+                                                    <span className="text-4xl">{v.i}</span><span className="font-black text-xs text-zinc-900 uppercase">{v.l}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <button onClick={() => setShowSettings(false)} className="w-full mt-6 bg-zinc-900 text-white font-black py-4 rounded-xl shadow-2xl transition active:scale-95 uppercase italic">Gas Sekarang!</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl z-10">
+                                <MenuCard title="START ABJAD" subtitle="Pit Stop Karakter" color="from-red-600 to-red-800" icon="fa-flag-checkered" onClick={() => setCurrentScreen('alphabet')} />
+                                <MenuCard title="GIGI VOKAL" subtitle="Turbo Booster" color="from-yellow-500 to-orange-600" icon="fa-bolt" onClick={() => setCurrentScreen('vowel')} />
+                                <MenuCard title="TRACK SUKU KATA" subtitle="Lintasan Ilmu" color="from-zinc-700 to-zinc-900" icon="fa-road" onClick={() => setCurrentScreen('syllableMenu')} />
+                                <MenuCard title="PODIUM BACA" subtitle="Piala Juara" color="from-emerald-500 to-teal-700" icon="fa-trophy" onClick={() => setCurrentScreen('reflection')} />
+                            </div>
+                        </div>
+                    );
+                    case 'alphabet': return <AlphabetScreen voiceIndex={voiceIndex} onBack={() => setCurrentScreen('menu')} filterVowel={false} />;
+                    case 'vowel': return <AlphabetScreen voiceIndex={voiceIndex} onBack={() => setCurrentScreen('menu')} filterVowel={true} />;
+                    case 'syllableMenu': return <SyllableMenu onBack={() => setCurrentScreen('menu')} onSelect={(item) => { setSelectedSyllable(item); setCurrentScreen('syllableLesson'); }} />;
+                    case 'syllableLesson': return <SyllableLesson voiceIndex={voiceIndex} data={selectedSyllable} onBack={() => setCurrentScreen('syllableMenu')} />;
+                    case 'reflection': return <ReflectionScreen voiceIndex={voiceIndex} onBack={() => setCurrentScreen('menu')} />;
+                }
+            };
+            return <div className="h-screen w-full overflow-hidden relative">{renderScreen()}</div>;
+        };
+
+        const SyllableMenu = ({ onBack, onSelect }) => (
+            <div className="h-full flex flex-col bg-zinc-950">
+                <div className="flex items-center justify-between p-4 bg-zinc-900 shadow-xl sticky top-0 z-20 border-b-4 border-red-600">
+                    <button onClick={onBack} className="bg-red-600 text-white w-10 h-10 rounded-lg shadow-xl active:scale-95"><i className="fas fa-chevron-left"></i></button>
+                    <h1 className="text-2xl font-black text-white uppercase italic tracking-tighter">Paddock Suku Kata</h1><div className="w-10"></div>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 relative">
+                    <div className="absolute inset-0 checkered-pattern opacity-10"></div>
+                    <div className="relative z-10 grid grid-cols-3 md:grid-cols-4 gap-4">
+                        {syllableData.map(item => (
+                            <div key={item.id} onClick={() => onSelect(item)} className="bg-zinc-100 rounded-xl shadow-2xl p-4 flex flex-col items-center justify-center cursor-pointer border-b-4 border-red-500 transition active:translate-y-1 hover:bg-white group">
+                                <span className="text-4xl font-black text-zinc-900 uppercase italic group-hover:scale-110 transition-transform">{item.syllable}</span>
+                                <span className="text-[10px] text-red-600 font-black uppercase tracking-widest mt-1">{item.word}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+
+        const MenuCard = ({ title, subtitle, color, icon, onClick }) => (
+            <button onClick={onClick} className={`relative overflow-hidden group bg-gradient-to-br ${color} rounded-2xl p-6 text-left shadow-2xl transform transition hover:scale-[1.02] active:scale-95 border-b-8 border-black/30 flex items-center justify-between btn-racing`}>
+                <div className="z-10"><h2 className="text-2xl font-black text-white italic drop-shadow-lg uppercase tracking-tight">{title}</h2><p className="text-white/80 font-bold text-xs uppercase tracking-widest">{subtitle}</p></div>
+                <div className="z-10 bg-white/20 p-4 rounded-xl backdrop-blur-md border border-white/20"><i className={`fas ${icon} text-3xl text-white`}></i></div>
+                <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-black/10 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
+            </button>
+        );
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
+
