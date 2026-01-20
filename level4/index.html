@@ -13,18 +13,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
 
     <style>
-        /* Latar belakang biru laut dalam */
+        /* Latar belakang biru laut dalam (Gelembung statis dihapus, diganti animasi di menu) */
         body { 
             font-family: 'Fredoka', sans-serif; 
             background-color: #075985; /* Sky 800 */
             color: #f1f5f9; 
             overscroll-behavior: none; user-select: none; -webkit-user-select: none; 
-            /* Efek gelembung air sederhana */
-            background-image: 
-                radial-gradient(circle at 20% 30%, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.1) 2%, transparent 3%),
-                radial-gradient(circle at 80% 70%, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.1) 1.5%, transparent 2%),
-                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.05) 4%, transparent 5%),
-                linear-gradient(to bottom, #0ea5e9, #075985, #0c4a6e);
+            /* Background gradient dasar */
+            background-image: linear-gradient(to bottom, #0ea5e9, #075985, #0c4a6e);
             background-attachment: fixed;
         }
         canvas { touch-action: none; cursor: crosshair; }
@@ -36,10 +32,35 @@
         .pattern-grid div:active { transform: scale(0.95); background-color: #0c4a6e; }
         .emoji-display { font-size: 8rem; line-height: 1; }
 
-        /* Efek gelombang di bagian atas */
-        .wave-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 10px;
-            background: rgba(255,255,255,0.2); blur: 5px; z-index: 100;
+        /* === BARU: CSS Animasi Gelembung === */
+        .bubble {
+            position: absolute;
+            bottom: -100px; /* Mulai dari bawah layar */
+            background-color: rgba(255, 255, 255, 0.25); /* Putih transparan */
+            border-radius: 50%;
+            pointer-events: none; /* Agar tidak menghalangi klik */
+            box-shadow: inset 0 0 10px rgba(255,255,255,0.5); /* Efek kilau */
+            animation: rise infinite ease-in;
+            z-index: 0;
+        }
+
+        @keyframes rise {
+            0% {
+                bottom: -100px;
+                transform: translateX(0);
+                opacity: 0;
+            }
+            20% {
+                opacity: 0.7;
+            }
+            50% {
+                transform: translateX(30px); /* Gerakan sedikit ke samping */
+            }
+            100% {
+                bottom: 120%; /* Naik sampai atas layar */
+                transform: translateX(-30px);
+                opacity: 0;
+            }
         }
     </style>
 </head>
@@ -47,7 +68,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useRef, useMemo } = React;
 
         // --- GLOBAL UTILS (TETAP) ---
         const speak = (text, voiceIndex = 0) => {
@@ -55,6 +76,7 @@
                 window.speechSynthesis.cancel();
                 let phoneticText = text.toLowerCase();
                 phoneticText = phoneticText.replace(/\bbe\b/g, 'beh');
+                phoneticText = phoneticText.replace(/\bme\b/g, 'meh');
                 if (phoneticText === 'c') { phoneticText = 'ce'; } 
                 else { phoneticText = phoneticText.replace(/c/g, 'ch'); }
                 
@@ -123,6 +145,38 @@
         ];
 
         // --- COMPONENTS ---
+
+        // Komponen Baru: Latar Belakang Gelembung Animasi
+        const BackgroundBubbles = () => {
+            // Menggunakan useMemo agar perhitungan gelembung hanya terjadi sekali saat mount
+            const bubbles = useMemo(() => {
+                return Array.from({ length: 20 }).map((_, i) => ({
+                    id: i,
+                    left: Math.random() * 100 + '%', // Posisi horizontal acak
+                    size: Math.random() * 30 + 10 + 'px', // Ukuran acak antara 10px - 40px
+                    duration: Math.random() * 15 + 10 + 's', // Durasi animasi acak antara 10s - 25s
+                    delay: Math.random() * 10 + 's' // Delay acak agar tidak muncul bersamaan
+                }));
+            }, []);
+
+            return (
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    {bubbles.map(b => (
+                        <div
+                            key={b.id}
+                            className="bubble"
+                            style={{
+                                left: b.left,
+                                width: b.size,
+                                height: b.size,
+                                animationDuration: b.duration,
+                                animationDelay: b.delay
+                            }}
+                        />
+                    ))}
+                </div>
+            );
+        };
 
         const DrawingCanvas = ({ width, height, traceText, title, className, penColor = "#2dd4bf", fontSize = 60 }) => {
             const canvasRef = useRef(null);
@@ -337,9 +391,15 @@
             const renderScreen = () => {
                 switch(currentScreen) {
                     case 'menu': return (
-                        <div className="h-full flex flex-col items-center justify-center p-6 bg-gradient-to-b from-sky-400 via-blue-600 to-sky-900 relative">
-                            <button onClick={() => setShowSettings(true)} className="absolute top-6 right-6 bg-white/20 p-3 rounded-full text-white backdrop-blur-md transition hover:bg-white/30"><i className="fas fa-anchor text-2xl"></i></button>
-                            <div className="text-center mb-10 animate-pop">
+                        // Tambahkan class 'overflow-hidden' agar gelembung tidak membuat scrollbar
+                        <div className="h-full flex flex-col items-center justify-center p-6 bg-gradient-to-b from-sky-400 via-blue-600 to-sky-900 relative overflow-hidden">
+                            
+                            {/* Masukkan Komponen Gelembung Latar Belakang */}
+                            <BackgroundBubbles />
+
+                            {/* Konten Menu (Diberi z-10 agar di atas gelembung) */}
+                            <button onClick={() => setShowSettings(true)} className="absolute top-6 right-6 bg-white/20 p-3 rounded-full text-white backdrop-blur-md transition hover:bg-white/30 z-10"><i className="fas fa-anchor text-2xl"></i></button>
+                            <div className="text-center mb-10 animate-pop z-10">
                                 <h1 className="text-7xl font-black text-white drop-shadow-lg font-hand mb-2" style={{textShadow: '4px 4px 0 #0369a1'}}>BACALIS</h1>
                                 <div className="bg-sky-900/40 backdrop-blur-sm px-6 py-2 rounded-full inline-block"><p className="text-white font-bold text-lg tracking-wide uppercase">Dunia Bawah Laut</p></div>
                                 <div className="mt-3"><span className="bg-yellow-400 text-sky-900 px-4 py-1 rounded-full text-sm font-black uppercase shadow-md border-2 border-white/20">Penyelam Level 4</span></div>
@@ -362,7 +422,7 @@
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl z-10">
                                 <MenuCard title="MENGENAL ABJAD" subtitle="Karang A - Z" color="from-blue-500 to-blue-700" icon="fa-water" onClick={() => setCurrentScreen('alphabet')} />
                                 <MenuCard title="HURUF VOKAL" subtitle="Mutiara Laut" color="from-yellow-400 to-orange-500" icon="fa-life-ring" onClick={() => setCurrentScreen('vowel')} />
                                 <MenuCard title="BACA SUKU KATA" subtitle="Arus Ilmu" color="from-cyan-500 to-emerald-600" icon="fa-fish-fins" onClick={() => setCurrentScreen('syllableMenu')} />
