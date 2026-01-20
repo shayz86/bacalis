@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bacalis - Belajar Baca Tulis (Zoo Theme)</title>
+    <title>Bacalis - Safari World Edition</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -13,15 +13,61 @@
     <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
 
     <style>
-        /* Menggunakan warna dasar krem kehijauan yang sejuk */
-        body { font-family: 'Fredoka', sans-serif; background-color: #f7fee7; overscroll-behavior: none; user-select: none; -webkit-user-select: none; }
+        /* Tema Safari: Hijau Rimba & Kuning Tanah */
+        body { 
+            font-family: 'Fredoka', sans-serif; 
+            background-color: #f0fdf4; 
+            overscroll-behavior: none; 
+            user-select: none; 
+            -webkit-user-select: none;
+            overflow: hidden;
+        }
         canvas { touch-action: none; cursor: crosshair; }
         .font-hand { font-family: 'Patrick Hand', cursive; }
+        
         .animate-pop { animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes pop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        /* Warna aktif diubah menjadi cokelat muda */
+
+        /* Animasi Latar Belakang Safari */
+        .safari-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        
+        .floating-leaf {
+            position: absolute;
+            color: rgba(22, 101, 52, 0.1);
+            animation: float 10s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(10deg); }
+        }
+
+        .moving-cloud {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.4);
+            animation: moveClouds 25s linear infinite;
+        }
+
+        @keyframes moveClouds {
+            from { transform: translateX(-100px); }
+            to { transform: translateX(100vw); }
+        }
+
         .pattern-grid div:active { transform: scale(0.95); background-color: #fef3c7; }
         .emoji-display { font-size: 8rem; line-height: 1; }
+        
+        /* Glassmorphism untuk elemen UI agar tetap terbaca di atas background */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -32,89 +78,93 @@
 
         // --- GLOBAL UTILS ---
         const speak = (text, voiceIndex = 0) => {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        
-        let phoneticText = text.toLowerCase();
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                let phoneticText = text.toLowerCase();
+                if (phoneticText === 'c') {
+                    phoneticText = 'ce'; 
+                } else {
+                    phoneticText = phoneticText.replace(/c/g, 'ch');
+                }
+                const utterance = new SpeechSynthesisUtterance(phoneticText);
+                utterance.lang = 'id-ID';
+                utterance.rate = 0.8;
+                const voices = window.speechSynthesis.getVoices();
+                const idVoices = voices.filter(v => v.lang.includes('id') || v.lang.includes('ID'));
+                if (idVoices.length > 0) {
+                    utterance.voice = idVoices[voiceIndex] || idVoices[0];
+                }
+                window.speechSynthesis.speak(utterance);
+            }
+        };
 
-        // --- PERBAIKAN LOGIKA HURUF C ---
-        if (phoneticText === 'c') {
-            phoneticText = 'ce'; 
-        } else {
-            phoneticText = phoneticText.replace(/c/g, 'ch');
-        }
-        
-        const utterance = new SpeechSynthesisUtterance(phoneticText);
-        utterance.lang = 'id-ID';
-        utterance.rate = 0.8;
+        // --- DECORATION COMPONENT ---
+        const SafariDecoration = () => (
+            <div className="safari-bg">
+                <div className="moving-cloud top-10 text-6xl" style={{animationDelay: '0s'}}><i className="fas fa-cloud"></i></div>
+                <div className="moving-cloud top-32 text-4xl" style={{animationDelay: '-10s'}}><i className="fas fa-cloud"></i></div>
+                <div className="floating-leaf top-1/4 left-10 text-7xl"><i className="fas fa-leaf"></i></div>
+                <div className="floating-leaf top-2/3 right-10 text-5xl" style={{animationDelay: '-3s'}}><i className="fas fa-seedling"></i></div>
+                <div className="absolute bottom-0 left-0 text-emerald-900/5 text-9xl"><i className="fas fa-tree"></i></div>
+                <div className="absolute bottom-0 right-0 text-emerald-900/5 text-9xl"><i className="fas fa-tree"></i></div>
+            </div>
+        );
 
-        const voices = window.speechSynthesis.getVoices();
-        const idVoices = voices.filter(v => v.lang.includes('id') || v.lang.includes('ID'));
-
-        if (idVoices.length > 0) {
-            utterance.voice = idVoices[voiceIndex] || idVoices[0];
-        }
-
-        window.speechSynthesis.speak(utterance);
-    }
-};
-
-        // --- DATA (TETAP UTUH) ---
+        // --- DATA (TETAP UTUH SESUAI ASLI) ---
         const alphabetData = Array.from({ length: 26 }, (_, i) => ({
             char: String.fromCharCode(65 + i),
             isVowel: ['A', 'I', 'U', 'E', 'O'].includes(String.fromCharCode(65 + i))
         }));
 
         const syllableData = [
-    { id: 'a i',  syllable: 'a-i',  word: 'api',  image: null, emoji: '🔥', pattern: [['ba', 'bi'], ['ca', 'ci'], ['da', 'di'], ['fa', 'fi'], ['ga', 'gi'], ['ha', 'hi'], ['ja', 'ji'], ['ka', 'ki'], ['la', 'li'], ['ma', 'mi'], ['na', 'ni'], ['pa', 'pi'], ['qa', 'qi'], ['ra', 'ri'], ['sa', 'si'], ['ta', 'ti'], ['va', 'vi'], ['wa', 'wi'], ['xa', 'xi'], ['ya', 'yi'], ['za', 'zi']] },
-    { id: 'bi',  syllable: 'bi',  word: 'bintang',  image: null, emoji: '⭐', pattern: [['bi', 'bi'], ['ba', 'bi'], ['bi', 'sa'], ['bi', 'na'], ['ba', 'gi'], ['na', 'bi'], ['bi', 'ra'], ['ba', 'ba', 'bi']] },
-    { id: 'ci',  syllable: 'ci',  word: 'cicak', image: null, emoji: '🦎', pattern: [['ci', 'ci'], ['ca', 'ci'], ['ci', 'ta'], ['ba', 'ci'], ['ci', 'ka'], ['ci', 'ra'], ['pa', 'ci'], ['ka', 'ca', 'ci']] },
-    { id: 'di',  syllable: 'di',  word: 'dino',  image: null, emoji: '🦕', pattern: [['di', 'di'], ['di', 'a'], ['da', 'ri'], ['pa', 'di'], ['ja', 'di'], ['di', 'na'], ['ba', 'di'], ['ha', 'di']] },
-    { id: 'fi',  syllable: 'fi',  word: 'film',  image: null, emoji: '🎬', pattern: [['fi', 'fi'], ['fa', 'ni'], ['fi', 'ra'], ['fi', 'da'], ['fi', 'sa'], ['fi', 'la'], ['fi', 'ka'], ['fi', 'ma']] },
-    { id: 'gi',  syllable: 'gi',  word: 'gigi',  image: null, emoji: '🦷', pattern: [['gi', 'gi'], ['pa', 'gi'], ['ba', 'gi'], ['gi', 'ga'], ['gi', 'na'], ['ga', 'ri'], ['gi', 'ri'], ['ba', 'ga', 'gi']] },
-    { id: 'hi',  syllable: 'hi',  word: 'hiu',   image: null, emoji: '🦈', pattern: [['ha', 'ri'], ['da', 'hi'], ['hi', 'u'], ['ma', 'hi'], ['hi', 'na'], ['ba', 'hi'], ['hi', 'sa'], ['hi', 'hi']] },
-    { id: 'ji',  syllable: 'ji',  word: 'jin',  image: null, emoji: '🧞‍♂️', pattern: [['ha', 'ji'], ['ga', 'ji'], ['ja', 'ri'], ['bi', 'ji'], ['ja', 'ji'], ['ji', 'ka'], ['ji', 'wa'], ['ba', 'ji']] },
-    { id: 'ki',  syllable: 'ki',  word: 'kiri',  image: null, emoji: '⬅️', pattern: [['ka', 'ki'], ['a', 'ki'], ['da', 'ki'], ['ki', 'ri'], ['ki', 'ta'], ['ki', 'ki'], ['ba', 'ki'], ['ki', 'ra']] },
-    { id: 'li',  syllable: 'li',  word: 'lima',  image: null, emoji: '🖐️', pattern: [['li', 'ma'], ['ta', 'li'], ['wa', 'li'], ['la', 'ri'], ['ba', 'li'], ['ka', 'li'], ['li', 'ra'], ['li', 'la']] },
-    { id: 'mi',  syllable: 'mi',  word: 'minum',  image: null, emoji: '🥛', pattern: [['ma', 'mi'], ['mi', 'mi'], ['ka', 'mi'], ['a', 'mi'], ['mi', 'na'], ['mi', 'ra'], ['mi', 'ta'], ['mi', 'a']] },
-    { id: 'ni',  syllable: 'ni',  word: 'ninja',  image: null, emoji: '🥷🏻', pattern: [['ni', 'ni'], ['ni', 'na'], ['ta', 'ni'], ['ba', 'ni'], ['pa', 'ni'], ['ni', 'sa'], ['ni', 'ra'], ['na', 'ni']] },
-    { id: 'pi',  syllable: 'pi',  word: 'pintu',  image: null, emoji: '🚪', pattern: [['pi', 'pi'], ['pa', 'pi'], ['a', 'pi'], ['sa', 'pi'], ['ta', 'pi'], ['pi', 'pa'], ['pi', 'ta'], ['ra', 'pi']] },
-    { id: 'qi',  syllable: 'qi',  word: 'qiyas',  image: './qiyas.jpg', emoji: '📖', pattern: [['qi', 'ra'], ['qa', 'ri'], ['qi', 'qi'], ['ba', 'qi'], ['qi', 'sa'], ['qi', 'na'], ['qi', 'ta'], ['qi', 'ra']] },
-    { id: 'ri',  syllable: 'ri',  word: 'jari',  image: null, emoji: '☝️', pattern: [['ja', 'ri'], ['la', 'ri'], ['da', 'ri'], ['ma', 'ri'], ['ri', 'a'], ['ci', 'ri'], ['ki', 'ri'], ['ri', 'na']] },
-    { id: 'si',  syllable: 'si',  word: 'sikat',  image: null, emoji: '🪥', pattern: [['si', 'si'], ['na', 'si'], ['ba', 'si'], ['da', 'si'], ['si', 'sa'], ['si', 'ra'], ['si', 'ta'], ['wa', 'si']] },
-    { id: 'ti',  syllable: 'ti',  word: 'tikus',  image: null, emoji: '🐀', pattern: [['ma', 'ti'], ['pa', 'ti'], ['ha', 'ti'], ['ti', 'ti'], ['ta', 'ti'], ['ti', 'ga'], ['ti', 'ra'], ['bu', 'pa', 'ti']] },
-    { id: 'vi',  syllable: 'vi',  word: 'virus',  image: null, emoji: '🦠', pattern: [['vi', 'vi'], ['vi', 'ra'], ['vi', 'na'], ['vi', 'ta'], ['vi', 'si'], ['vi', 'ka'], ['vi', 'la'], ['vi', 'sa']] },
-    { id: 'wi',  syllable: 'wi',  word: 'wisuda',  image: null, emoji: '👨🏻‍🎓', pattern: [['sa', 'wi'], ['wi', 'ra'], ['wi', 'wi'], ['wi', 'da'], ['wi', 'ka'], ['wi', 'ta'], ['wi', 'na'], ['wi', 'sa']] },
-    { id: 'xi',  syllable: 'xi',  word: 'xilofon',  image: './xilofon.jpg', emoji: '🎶', pattern: [['ta', 'xi'], ['xi', 'xi'], ['xa', 'xi'], ['ba', 'xi'], ['xi', 'ra'], ['xi', 'na'], ['xi', 'sa'], ['xi', 'ta']] },
-    { id: 'yi',  syllable: 'yi',  word: 'bayi',  image: null, emoji: '👶', pattern: [['ba', 'yi'], ['ya', 'yi'], ['yi', 'yi'], ['sa', 'yi'], ['yi', 'na'], ['yi', 'ta'], ['yi', 'sa'], ['yi', 'ka']] },
-    { id: 'zi',  syllable: 'zi',  word: 'gizi',  image: './gizi.jpg', emoji: '🥦', pattern: [['gi', 'zi'], ['zi', 'na'], ['ba', 'zi'], ['za', 'zi'], ['zi', 'ra'], ['zi', 'ta'], ['zi', 'sa'], ['zi', 'ka']] },
-];
+            { id: 'a i',  syllable: 'a-i',  word: 'itik',  image: null, emoji: '🦆', pattern: [['ba', 'bi'], ['ca', 'ci'], ['da', 'di'], ['fa', 'fi'], ['ga', 'gi'], ['ha', 'hi'], ['ja', 'ji'], ['ka', 'ki'], ['la', 'li'], ['ma', 'mi'], ['na', 'ni'], ['pa', 'pi'], ['qa', 'qi'], ['ra', 'ri'], ['sa', 'si'], ['ta', 'ti'], ['va', 'vi'], ['wa', 'wi'], ['xa', 'xi'], ['ya', 'yi'], ['za', 'zi']] },
+            { id: 'bi',  syllable: 'bi',  word: 'bintang',  image: null, emoji: '⭐', pattern: [['bi', 'bi'], ['ba', 'bi'], ['bi', 'sa'], ['bi', 'na'], ['ba', 'gi'], ['na', 'bi'], ['bi', 'ra'], ['ba', 'ba', 'bi']] },
+            { id: 'ci',  syllable: 'ci',  word: 'cicak', image: null, emoji: '🦎', pattern: [['ci', 'ci'], ['ca', 'ci'], ['ci', 'ta'], ['ba', 'ci'], ['ci', 'ka'], ['ci', 'ra'], ['pa', 'ci'], ['ka', 'ca', 'ci']] },
+            { id: 'di',  syllable: 'di',  word: 'dino',  image: null, emoji: '🦕', pattern: [['di', 'di'], ['di', 'a'], ['da', 'ri'], ['pa', 'di'], ['ja', 'di'], ['di', 'na'], ['ba', 'di'], ['ha', 'di']] },
+            { id: 'fi',  syllable: 'fi',  word: 'film',  image: null, emoji: '🎬', pattern: [['fi', 'fi'], ['fa', 'ni'], ['fi', 'ra'], ['fi', 'da'], ['fi', 'sa'], ['fi', 'la'], ['fi', 'ka'], ['fi', 'ma']] },
+            { id: 'gi',  syllable: 'gi',  word: 'gigi',  image: null, emoji: '🦷', pattern: [['gi', 'gi'], ['pa', 'gi'], ['ba', 'gi'], ['gi', 'ga'], ['gi', 'na'], ['ga', 'ri'], ['gi', 'ri'], ['ba', 'ga', 'gi']] },
+            { id: 'hi',  syllable: 'hi',  word: 'hiu',   image: null, emoji: '🦈', pattern: [['ha', 'ri'], ['da', 'hi'], ['hi', 'u'], ['ma', 'hi'], ['hi', 'na'], ['ba', 'hi'], ['hi', 'sa'], ['hi', 'hi']] },
+            { id: 'ji',  syllable: 'ji',  word: 'jin',  image: null, emoji: '🧞‍♂️', pattern: [['ha', 'ji'], ['ga', 'ji'], ['ja', 'ri'], ['bi', 'ji'], ['ja', 'ji'], ['ji', 'ka'], ['ji', 'wa'], ['ba', 'ji']] },
+            { id: 'ki',  syllable: 'ki',  word: 'kiri',  image: null, emoji: '⬅️', pattern: [['ka', 'ki'], ['a', 'ki'], ['da', 'ki'], ['ki', 'ri'], ['ki', 'ta'], ['ki', 'ki'], ['ba', 'ki'], ['ki', 'ra']] },
+            { id: 'li',  syllable: 'li',  word: 'lima',  image: null, emoji: '🖐️', pattern: [['li', 'ma'], ['ta', 'li'], ['wa', 'li'], ['la', 'ri'], ['ba', 'li'], ['ka', 'li'], ['li', 'ra'], ['li', 'la']] },
+            { id: 'mi',  syllable: 'mi',  word: 'minum',  image: null, emoji: '🥛', pattern: [['ma', 'mi'], ['mi', 'mi'], ['ka', 'mi'], ['a', 'mi'], ['mi', 'na'], ['mi', 'ra'], ['mi', 'ta'], ['mi', 'a']] },
+            { id: 'ni',  syllable: 'ni',  word: 'ninja',  image: null, emoji: '🥷🏻', pattern: [['ni', 'ni'], ['ni', 'na'], ['ta', 'ni'], ['ba', 'ni'], ['pa', 'ni'], ['ni', 'sa'], ['ni', 'ra'], ['na', 'ni']] },
+            { id: 'pi',  syllable: 'pi',  word: 'pintu',  image: null, emoji: '🚪', pattern: [['pi', 'pi'], ['pa', 'pi'], ['a', 'pi'], ['sa', 'pi'], ['ta', 'pi'], ['pi', 'pa'], ['pi', 'ta'], ['ra', 'pi']] },
+            { id: 'qi',  syllable: 'qi',  word: 'qiyas',  image: './qiyas.jpg', emoji: '📖', pattern: [['qi', 'ra'], ['qa', 'ri'], ['qi', 'qi'], ['ba', 'qi'], ['qi', 'sa'], ['qi', 'na'], ['qi', 'ta'], ['qi', 'ra']] },
+            { id: 'ri',  syllable: 'ri',  word: 'jari',  image: null, emoji: '☝️', pattern: [['ja', 'ri'], ['la', 'ri'], ['da', 'ri'], ['ma', 'ri'], ['ri', 'a'], ['ci', 'ri'], ['ki', 'ri'], ['ri', 'na']] },
+            { id: 'si',  syllable: 'si',  word: 'sikat',  image: null, emoji: '🪥', pattern: [['si', 'si'], ['na', 'si'], ['ba', 'si'], ['da', 'si'], ['si', 'sa'], ['si', 'ra'], ['si', 'ta'], ['wa', 'si']] },
+            { id: 'ti',  syllable: 'ti',  word: 'tikus',  image: null, emoji: '🐀', pattern: [['ma', 'ti'], ['pa', 'ti'], ['ha', 'ti'], ['ti', 'ti'], ['ta', 'ti'], ['ti', 'ga'], ['ti', 'ra'], ['bu', 'pa', 'ti']] },
+            { id: 'vi',  syllable: 'vi',  word: 'virus',  image: null, emoji: '🦠', pattern: [['vi', 'vi'], ['vi', 'ra'], ['vi', 'na'], ['vi', 'ta'], ['vi', 'si'], ['vi', 'ka'], ['vi', 'la'], ['vi', 'sa']] },
+            { id: 'wi',  syllable: 'wi',  word: 'wisuda',  image: null, emoji: '👨🏻‍🎓', pattern: [['sa', 'wi'], ['wi', 'ra'], ['wi', 'wi'], ['wi', 'da'], ['wi', 'ka'], ['wi', 'ta'], ['wi', 'na'], ['wi', 'sa']] },
+            { id: 'xi',  syllable: 'xi',  word: 'xilofon',  image: './xilofon.jpg', emoji: '🎶', pattern: [['ta', 'xi'], ['xi', 'xi'], ['xa', 'xi'], ['ba', 'xi'], ['xi', 'ra'], ['xi', 'na'], ['xi', 'sa'], ['xi', 'ta']] },
+            { id: 'yi',  syllable: 'yi',  word: 'bayi',  image: null, emoji: '👶', pattern: [['ba', 'yi'], ['ya', 'yi'], ['yi', 'yi'], ['sa', 'yi'], ['yi', 'na'], ['yi', 'ta'], ['yi', 'sa'], ['yi', 'ka']] },
+            { id: 'zi',  syllable: 'zi',  word: 'gizi',  image: './gizi.jpg', emoji: '🥦', pattern: [['gi', 'zi'], ['zi', 'na'], ['ba', 'zi'], ['za', 'zi'], ['zi', 'ra'], ['zi', 'ta'], ['zi', 'sa'], ['zi', 'ka']] },
+        ];
 
         const reflectionDataRaw = [
-    ["nama saya rani", "mama saya rani", "papa saya hadi", "saya suka lari", "mari lari pagi"],
-    ["bibi bawa pita", "pita nina tiga", "pita rani lima", "pita nani sapa", "pita saya mana"],
-    ["ini kaki nina", "kaki nina lima", "gigi saya tiga", "gigi nani ada", "gigi papa mana"],
-    ["nasi mama ada", "sawi papa tiga", "mama bawa sawi", "papa suka nasi", "nasi nina mana"],
-    ["pipi saya rona", "hati saya suka", "pipi nani ada", "hati bibi sapa", "pipi papa mana"],
-    ["mari lari pagi", "lari sama nina", "nani lari pagi", "papa lari juga", "rani lari sana"],
-    ["saya jadi bisa", "nina bisa baca", "rani bisa lari", "nani jadi raja", "papa bisa apa"],
-    ["dari mana nina", "nina dari sana", "mana pita mama", "pita ada sana", "mama dari mana"],
-    ["jari saya lima", "biji sawi ada", "jari papa tiga", "biji nina mana", "jari rani ada"],
-    ["hari ini apa", "hari nina suka", "nani sapa mama", "papa sapa bibi", "rani sapa nani"],
-    ["tali rani ada", "tali nani tiga", "bibi bawa tali", "tali mama mana", "tali papa ada"],
-    ["rupa nina kaya", "ciri rani ada", "mama rupa apa", "rani rupa nani", "ciri nina mana"],
-    ["sapi papa ada", "sapi rani tiga", "mama bawa sapi", "sapi nina mana", "sapi lari sana"],
-    ["nina ada sini", "mama ada sana", "papa lari sini", "bibi lari sana", "nani ada sini"],
-    ["dasi papa rapi", "dasi rani ada", "nani bawa dasi", "dasi nina mana", "dasi mana rapi"],
-    ["dahi nina ada", "mata papa ada", "dahi mama rona", "mata bibi ada", "mata nina mana"],
-    ["cita nina jaya", "cita rani ada", "cita mama apa", "cita nani jaya", "cita papa ada"],
-    ["pagi hari lari", "hari nina jaya", "rani lari pagi", "pagi papa ada", "hari mama jaya"],
-    ["mimi nina ada", "mimi rani tiga", "mimi nani mana", "mimi mama ada", "mimi papa rapi"],
-    ["mama papa rani", "rani suka lari", "lari lari pagi", "hari hari jaya", "saya jadi bisa"]
-];
+            ["nama saya rani", "mama saya rani", "papa saya hadi", "saya suka lari", "mari lari pagi"],
+            ["bibi bawa pita", "pita nina tiga", "pita rani lima", "pita nani sapa", "pita saya mana"],
+            ["ini kaki nina", "kaki nina lima", "gigi saya tiga", "gigi nani ada", "gigi papa mana"],
+            ["nasi mama ada", "sawi papa tiga", "mama bawa sawi", "papa suka nasi", "nasi nina mana"],
+            ["pipi saya rona", "hati saya suka", "pipi nani ada", "hati bibi sapa", "pipi papa mana"],
+            ["mari lari pagi", "lari sama nina", "nani lari pagi", "papa lari juga", "rani lari sana"],
+            ["saya jadi bisa", "nina bisa baca", "rani bisa lari", "nani jadi raja", "papa bisa apa"],
+            ["dari mana nina", "nina dari sana", "mana pita mama", "pita ada sana", "mama dari mana"],
+            ["jari saya lima", "biji sawi ada", "jari papa tiga", "biji nina mana", "jari rani ada"],
+            ["hari ini apa", "hari nina suka", "nani sapa mama", "papa sapa bibi", "rani sapa nani"],
+            ["tali rani ada", "tali nani tiga", "bibi bawa tali", "tali mama mana", "tali papa ada"],
+            ["rupa nina kaya", "ciri rani ada", "mama rupa apa", "rani rupa nani", "ciri nina mana"],
+            ["sapi papa ada", "sapi rani tiga", "mama bawa sapi", "sapi nina mana", "sapi lari sana"],
+            ["nina ada sini", "mama ada sana", "papa lari sini", "bibi lari sana", "nani ada sini"],
+            ["dasi papa rapi", "dasi rani ada", "nani bawa dasi", "dasi nina mana", "dasi mana rapi"],
+            ["dahi nina ada", "mata papa ada", "dahi mama rona", "mata bibi ada", "mata nina mana"],
+            ["cita nina jaya", "cita rani ada", "cita mama apa", "cita nani jaya", "cita papa ada"],
+            ["pagi hari lari", "hari nina jaya", "rani lari pagi", "pagi papa ada", "hari mama jaya"],
+            ["mimi nina ada", "mimi rani tiga", "mimi nani mana", "mimi mama ada", "mimi papa rapi"],
+            ["mama papa rani", "rani suka lari", "lari lari pagi", "hari hari jaya", "saya jadi bisa"]
+        ];
 
         // --- COMPONENTS ---
-
         const DrawingCanvas = ({ width, height, traceText, title, className, penColor = "#000000", fontSize = 60 }) => {
             const canvasRef = useRef(null);
             const [isDrawing, setIsDrawing] = useState(false);
@@ -172,48 +222,28 @@
         };
 
         const AlphabetScreen = ({ onBack, filterVowel, voiceIndex }) => {
-    const data = filterVowel 
-        ? [
-            {char: 'A', isVowel: true}, {char: 'I', isVowel: true},
-            {char: 'U', isVowel: true}, {char: 'E', isVowel: true},
-            {char: 'O', isVowel: true}
-          ]
-        : alphabetData;
-
-    return (
-        <div className="h-full flex flex-col">
-            <div className="flex items-center justify-between p-4 bg-white shadow-sm sticky top-0 z-20">
-                <button onClick={onBack} className="bg-emerald-700 text-white w-10 h-10 rounded-full shadow-lg hover:bg-emerald-800 active:scale-95 transition-transform">
-                    <i className="fas fa-arrow-left"></i>
-                </button>
-                <h1 className="text-2xl font-bold text-emerald-900">
-                    {filterVowel ? "BELAJAR VOKAL" : "BELAJAR ABJAD"}
-                </h1>
-                <div className="w-10"></div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 bg-lime-50">
-                <div className="flex flex-wrap justify-center gap-4">
-                    {data.map(item => (
-                        <div 
-                            key={item.char}
-                            onClick={() => speak(item.char.toLowerCase(), voiceIndex)}
-                            className={`
-                                ${filterVowel ? 'w-[42%]' : 'w-[28%] md:w-[15%]'} 
-                                aspect-square rounded-2xl flex flex-col items-center justify-center shadow-lg cursor-pointer
-                                transform transition hover:scale-105 active:scale-95
-                                ${item.isVowel ? 'bg-gradient-to-br from-yellow-400 to-amber-600 text-white' : 'bg-white text-emerald-700 border-b-4 border-emerald-100'}
-                            `}
-                        >
-                            <span className="text-6xl md:text-7xl font-black drop-shadow-md">{item.char}</span>
-                            {item.isVowel && <span className="text-xs font-bold bg-white text-amber-700 px-2 py-1 rounded-full mt-2 uppercase">VOKAL</span>}
+            const data = filterVowel ? alphabetData.filter(d => d.isVowel) : alphabetData;
+            return (
+                <div className="h-full flex flex-col relative">
+                    <SafariDecoration />
+                    <div className="flex items-center justify-between p-4 glass-panel shadow-sm sticky top-0 z-20">
+                        <button onClick={onBack} className="bg-emerald-800 text-white w-10 h-10 rounded-full shadow-lg active:scale-95 transition-transform"><i className="fas fa-arrow-left"></i></button>
+                        <h1 className="text-2xl font-bold text-emerald-950 uppercase">{filterVowel ? "Hutan Vokal" : "Safari Abjad"}</h1>
+                        <div className="w-10"></div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 z-10">
+                        <div className="flex flex-wrap justify-center gap-4">
+                            {data.map(item => (
+                                <div key={item.char} onClick={() => speak(item.char.toLowerCase(), voiceIndex)}
+                                    className={`${filterVowel ? 'w-[42%]' : 'w-[28%] md:w-[15%]'} aspect-square rounded-2xl flex flex-col items-center justify-center shadow-lg cursor-pointer transform transition hover:scale-105 active:scale-95 ${item.isVowel ? 'bg-gradient-to-br from-yellow-400 to-orange-600 text-white' : 'bg-white/90 text-emerald-900 border-b-4 border-emerald-200'}`}>
+                                    <span className="text-6xl md:text-7xl font-black drop-shadow-md">{item.char}</span>
+                                </div>
+                            ))}
                         </div>
-                    ))}
+                    </div>
                 </div>
-            </div>
-        </div>
-    );
-};
+            );
+        };
 
         const SyllableLesson = ({ data, onBack, voiceIndex }) => {
             useEffect(() => { speak(`${data.syllable}. ${data.word}`, voiceIndex); }, [data, voiceIndex]);
@@ -229,16 +259,17 @@
             }, []);
 
             return (
-                <div className="h-full flex flex-col bg-stone-50">
-                    <div className="flex items-center justify-between p-3 bg-white shadow-sm sticky top-0 z-30">
-                        <button onClick={onBack} className="bg-emerald-700 text-white w-10 h-10 rounded-full shadow hover:bg-emerald-800"><i className="fas fa-arrow-left"></i></button>
-                        <h1 className="text-xl md:text-2xl font-black text-emerald-900 uppercase">BELAJAR: <span className="text-orange-700">{data.syllable}</span></h1>
-                        <button onClick={() => speak(data.word, voiceIndex)} className="bg-orange-500 text-white w-10 h-10 rounded-full shadow hover:bg-orange-600 animate-pulse"><i className="fas fa-volume-up"></i></button>
+                <div className="h-full flex flex-col bg-stone-50 relative">
+                    <SafariDecoration />
+                    <div className="flex items-center justify-between p-3 glass-panel shadow-sm sticky top-0 z-30">
+                        <button onClick={onBack} className="bg-emerald-800 text-white w-10 h-10 rounded-full shadow hover:bg-emerald-900"><i className="fas fa-arrow-left"></i></button>
+                        <h1 className="text-xl md:text-2xl font-black text-emerald-950 uppercase">TRACK: <span className="text-orange-700">{data.syllable}</span></h1>
+                        <button onClick={() => speak(data.word, voiceIndex)} className="bg-orange-600 text-white w-10 h-10 rounded-full shadow animate-pulse"><i className="fas fa-volume-up"></i></button>
                     </div>
-                    <div className="flex-1 overflow-y-auto pb-20">
+                    <div className="flex-1 overflow-y-auto pb-20 z-10">
                         <div className="max-w-3xl mx-auto p-4 space-y-8">
-                            <div className="bg-white rounded-3xl shadow-lg p-6 flex flex-col md:flex-row items-center gap-6 border-b-4 border-lime-200">
-                                <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-amber-400 shadow-inner bg-lime-50 shrink-0 flex items-center justify-center relative">
+                            <div className="bg-white/90 rounded-3xl shadow-lg p-6 flex flex-col md:flex-row items-center gap-6 border-b-4 border-emerald-100">
+                                <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-amber-500 shadow-inner bg-lime-50 shrink-0 flex items-center justify-center relative">
                                     {data.image ? (
                                         <img src={data.image} alt={data.word} className="w-full h-full object-cover cursor-pointer hover:scale-110 transition-transform"
                                             onClick={() => speak(data.word, voiceIndex)} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
@@ -248,41 +279,41 @@
                                 </div>
                                 <div className="text-center md:text-left flex-1">
                                     <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
-                                        <span className="text-7xl font-black text-emerald-700 font-hand">{data.syllable}</span>
-                                        <i className="fas fa-arrow-right text-stone-300"></i>
-                                        <span className="text-5xl font-bold text-stone-800 capitalize">{data.word}</span>
+                                        <span className="text-7xl font-black text-emerald-800 font-hand">{data.syllable}</span>
+                                        <i className="fas fa-paw text-stone-300"></i>
+                                        <span className="text-5xl font-bold text-stone-900 capitalize">{data.word}</span>
                                     </div>
                                 </div>
                             </div>
                             <div className="space-y-3">
-                                <div className="flex items-center gap-2 mb-2"><div className="bg-emerald-600 text-white p-2 rounded-lg shadow"><i className="fas fa-leaf"></i></div><h3 className="text-xl font-bold text-emerald-900">Ayo Membaca</h3></div>
-                                <div className="bg-lime-50 rounded-2xl p-4 border-2 border-lime-100 grid grid-cols-2 gap-4">
+                                <div className="flex items-center gap-2 mb-2"><div className="bg-emerald-700 text-white p-2 rounded-lg shadow"><i className="fas fa-leaf"></i></div><h3 className="text-xl font-bold text-emerald-950">Jejak Baca</h3></div>
+                                <div className="bg-white/70 rounded-2xl p-4 border-2 border-emerald-100 grid grid-cols-2 gap-4">
                                     {data.pattern.map((row, idx) => (
-                                        <div key={idx} className="flex flex-col items-center justify-center p-3 border-b border-lime-100 last:border-0 bg-white shadow-sm rounded-xl">
-                                            <div className="flex flex-wrap justify-center text-2xl md:text-3xl font-bold text-emerald-800 tracking-wide">
+                                        <div key={idx} className="flex flex-col items-center justify-center p-3 border-b border-emerald-50 last:border-0 bg-white/90 shadow-sm rounded-xl">
+                                            <div className="flex flex-wrap justify-center text-2xl md:text-3xl font-bold text-emerald-900 tracking-wide">
                                                 {row.map((syl, sIdx) => (
                                                     <span key={sIdx} className="hover:text-orange-700 cursor-pointer" onClick={() => speak(syl, voiceIndex)}>
                                                         {syl}{sIdx < row.length - 1 ? '-' : ''}
                                                     </span>
                                                 ))}
                                             </div>
-                                            <span className="text-[10px] md:text-xs text-stone-400 font-medium uppercase tracking-[0.2em] mt-1 cursor-pointer hover:text-emerald-600"
+                                            <span className="text-[10px] md:text-xs text-stone-400 font-medium uppercase tracking-[0.2em] mt-1"
                                                 onClick={() => speak(row.join('. '), voiceIndex)}>{row.join('')}</span>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                             <div className="space-y-3">
-                                <div className="flex items-center gap-2 mb-2"><div className="bg-amber-700 text-white p-2 rounded-lg shadow"><i className="fas fa-paw"></i></div><h3 className="text-xl font-bold text-stone-700">Ayo Menebalkan</h3></div>
-                                <div className="bg-stone-100 rounded-2xl p-4 border-2 border-stone-200 flex flex-col items-center gap-6">
-                                    <DrawingCanvas width={canvasSize.width} height={canvasSize.height} traceText={`${data.syllable}  ${data.syllable}`} penColor="#44403c" fontSize={80} />
-                                    <DrawingCanvas width={canvasSize.width} height={canvasSize.height} traceText={`${data.syllable}  ${data.syllable}`} penColor="#44403c" fontSize={80} />
+                                <div className="flex items-center gap-2 mb-2"><div className="bg-amber-700 text-white p-2 rounded-lg shadow"><i className="fas fa-pen-nib"></i></div><h3 className="text-xl font-bold text-stone-800">Menyusuri Huruf</h3></div>
+                                <div className="bg-white/60 rounded-2xl p-4 border-2 border-stone-200 flex flex-col items-center gap-6">
+                                    <DrawingCanvas width={canvasSize.width} height={canvasSize.height} traceText={`${data.syllable}  ${data.syllable}`} penColor="#064e3b" fontSize={80} />
+                                    <DrawingCanvas width={canvasSize.width} height={canvasSize.height} traceText={`${data.syllable}  ${data.syllable}`} penColor="#064e3b" fontSize={80} />
                                 </div>
                             </div>
                             <div className="space-y-3">
-                                <div className="flex items-center gap-2 mb-2"><div className="bg-stone-600 text-white p-2 rounded-lg shadow"><i className="fas fa-edit"></i></div><h3 className="text-xl font-bold text-stone-700">Menulis & Dikte</h3></div>
-                                <div className="bg-stone-50 rounded-2xl p-4 border-2 border-stone-200 grid grid-cols-3 gap-3 justify-items-center">
-                                    {Array(6).fill(0).map((_, i) => <DrawingCanvas key={i} width={dikteSize.width} height={dikteSize.height} penColor="#44403c" className="shadow-md" />)}
+                                <div className="flex items-center gap-2 mb-2"><div className="bg-stone-700 text-white p-2 rounded-lg shadow"><i className="fas fa-edit"></i></div><h3 className="text-xl font-bold text-stone-800">Dikte Rimba</h3></div>
+                                <div className="bg-white/60 rounded-2xl p-4 border-2 border-stone-200 grid grid-cols-3 gap-3 justify-items-center">
+                                    {Array(6).fill(0).map((_, i) => <DrawingCanvas key={i} width={dikteSize.width} height={dikteSize.height} penColor="#064e3b" className="shadow-md" />)}
                                 </div>
                             </div>
                         </div>
@@ -297,22 +328,23 @@
             if (pages.length === 0) return null;
             const currentData = pages[currentIndex];
             return (
-                <div className="h-full flex flex-col bg-emerald-50">
-                    <div className="flex items-center justify-between p-4 bg-white shadow-sm sticky top-0 z-20">
-                        <button onClick={onBack} className="bg-emerald-700 text-white w-10 h-10 rounded-full shadow"><i className="fas fa-arrow-left"></i></button>
-                        <h1 className="text-2xl font-bold text-emerald-900">REFLEKSI BACA</h1>
-                        <span className="font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-lg">{currentIndex + 1}/3</span>
+                <div className="h-full flex flex-col bg-emerald-50 relative">
+                    <SafariDecoration />
+                    <div className="flex items-center justify-between p-4 glass-panel shadow-sm sticky top-0 z-20">
+                        <button onClick={onBack} className="bg-emerald-800 text-white w-10 h-10 rounded-full shadow"><i className="fas fa-arrow-left"></i></button>
+                        <h1 className="text-2xl font-bold text-emerald-950 uppercase">Refleksi Safari</h1>
+                        <span className="font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-lg">{currentIndex + 1}/3</span>
                     </div>
-                    <div className="flex-1 flex flex-col justify-center p-6 max-w-2xl mx-auto w-full">
-                        <div className="bg-white p-8 rounded-3xl shadow-xl border-t-8 border-emerald-600 space-y-6">
+                    <div className="flex-1 flex flex-col justify-center p-6 max-w-2xl mx-auto w-full z-10">
+                        <div className="bg-white/90 p-8 rounded-3xl shadow-xl border-t-8 border-emerald-800 space-y-6">
                             {currentData.map((sentence, idx) => (
-                                <div key={idx} onClick={() => speak(sentence, voiceIndex)} className="text-2xl font-medium text-emerald-900 border-b pb-3 pl-4 cursor-pointer hover:bg-lime-50 rounded transition flex items-start gap-3">
-                                    <span className="text-sm font-bold text-stone-300 mt-2">{idx+1}</span>{sentence}
+                                <div key={idx} onClick={() => speak(sentence, voiceIndex)} className="text-2xl font-medium text-emerald-950 border-b border-emerald-50 pb-3 pl-4 cursor-pointer hover:bg-emerald-50 rounded transition flex items-start gap-3">
+                                    <span className="text-sm font-bold text-emerald-200 mt-2">{idx+1}</span>{sentence}
                                 </div>
                             ))}
                         </div>
-                        <button onClick={() => currentIndex < 2 ? setCurrentIndex(i => i+1) : onBack()} className="mt-8 bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg w-full text-xl uppercase">
-                            {currentIndex === 2 ? "Selesai" : "Berikutnya"} <i className="fas fa-arrow-right ml-2"></i>
+                        <button onClick={() => currentIndex < 2 ? setCurrentIndex(i => i+1) : onBack()} className="mt-8 bg-emerald-800 text-white font-bold py-4 rounded-xl shadow-lg w-full text-xl uppercase active:scale-95">
+                            {currentIndex === 2 ? "Selesai Ekspedisi" : "Lanjut Safari"} <i className="fas fa-arrow-right ml-2"></i>
                         </button>
                     </div>
                 </div>
@@ -331,36 +363,38 @@
             const renderScreen = () => {
                 switch(currentScreen) {
                     case 'menu': return (
-                        <div className="h-full flex flex-col items-center justify-center p-6 bg-gradient-to-b from-emerald-500 to-lime-600 relative">
-                            <button onClick={() => setShowSettings(true)} className="absolute top-6 right-6 bg-white/20 p-3 rounded-full text-white backdrop-blur-md transition hover:bg-white/40"><i className="fas fa-cog text-2xl"></i></button>
-                            <div className="text-center mb-10 animate-pop">
+                        <div className="h-full flex flex-col items-center justify-center p-6 bg-gradient-to-b from-emerald-600 to-green-800 relative">
+                            <SafariDecoration />
+                            <button onClick={() => setShowSettings(true)} className="absolute top-6 right-6 bg-white/20 p-3 rounded-full text-white backdrop-blur-md transition hover:bg-white/40 z-20"><i className="fas fa-cog text-2xl"></i></button>
+                            
+                            <div className="text-center mb-10 animate-pop z-10">
                                 <h1 className="text-7xl font-black text-white drop-shadow-md font-hand mb-2" style={{textShadow: '4px 4px 0 #064e3b'}}>BACALIS</h1>
-                                <div className="bg-white/20 backdrop-blur-sm px-6 py-2 rounded-full inline-block"><p className="text-white font-bold text-lg tracking-wide uppercase">Belajar Baca & Tulis</p></div>
-                                <div className="mt-3"><span className="bg-amber-400 text-amber-900 px-4 py-1 rounded-full text-sm font-black uppercase shadow-md border-2 border-white/50">Level 2</span></div>
+                                <div className="bg-white/20 backdrop-blur-sm px-6 py-2 rounded-full inline-block"><p className="text-white font-bold text-lg tracking-wide uppercase">Safari Baca Tulis</p></div>
+                                <div className="mt-3"><span className="bg-yellow-400 text-emerald-950 px-4 py-1 rounded-full text-sm font-black uppercase shadow-md border-2 border-white/50">Explorer Level</span></div>
                             </div>
                             
                             {showSettings && (
-                                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/50 backdrop-blur-sm">
+                                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
                                     <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
-                                        <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold text-emerald-900">Pilih Suara Pemandu</h3><button onClick={() => setShowSettings(false)} className="text-stone-400 hover:text-emerald-700 text-2xl"><i className="fas fa-times-circle"></i></button></div>
+                                        <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold text-emerald-950">Suara Pemandu Safari</h3><button onClick={() => setShowSettings(false)} className="text-stone-400 hover:text-emerald-700 text-2xl"><i className="fas fa-times-circle"></i></button></div>
                                         <div className="grid grid-cols-2 gap-4">
-                                            {[ {l:'Kakak 1', i:'👩'}, {l:'Kakak 2', i:'👩‍🦰'}, {l:'Kakak 3', i:'👨'}, {l:'Kakak 4', i:'👨‍🦱'} ].map((v, i) => (
-                                                <button key={i} onClick={() => { setVoiceIndex(i); speak('Halo, saya Pemandu nomor ' + (i+1), i); }}
-                                                    className={`p-4 rounded-2xl flex flex-col items-center gap-2 border-4 transition-all ${voiceIndex === i ? 'border-emerald-500 bg-emerald-50 scale-105 shadow-md' : 'border-transparent bg-stone-50 opacity-60'}`}>
+                                            {[ {l:'Ranger 1', i:'👩'}, {l:'Ranger 2', i:'👩‍🦰'}, {l:'Ranger 3', i:'👨'}, {l:'Ranger 4', i:'👨‍🦱'} ].map((v, i) => (
+                                                <button key={i} onClick={() => { setVoiceIndex(i); speak('Halo, saya Ranger nomor ' + (i+1), i); }}
+                                                    className={`p-4 rounded-2xl flex flex-col items-center gap-2 border-4 transition-all ${voiceIndex === i ? 'border-emerald-600 bg-emerald-50 scale-105 shadow-md' : 'border-transparent bg-stone-50 opacity-60'}`}>
                                                     <span className="text-4xl">{v.i}</span><span className="font-bold text-xs uppercase">{v.l}</span>
                                                 </button>
                                             ))}
                                         </div>
-                                        <button onClick={() => setShowSettings(false)} className="w-full mt-6 bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-lg transition active:scale-95">Mulai Safari</button>
+                                        <button onClick={() => setShowSettings(false)} className="w-full mt-6 bg-emerald-800 text-white font-bold py-3 rounded-xl shadow-lg">Mulai Ekspedisi</button>
                                     </div>
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
-                                <MenuCard title="MENGENAL ABJAD" subtitle="A - Z Petualang" color="from-emerald-700 to-emerald-900" icon="fa-paw" onClick={() => setCurrentScreen('alphabet')} />
-                                <MenuCard title="HURUF VOKAL" subtitle="Inti Rimba" color="from-amber-500 to-orange-700" icon="fa-leaf" onClick={() => setCurrentScreen('vowel')} />
-                                <MenuCard title="BACA SUKU KATA" subtitle="Jejak Pelajaran" color="from-lime-600 to-emerald-700" icon="fa-map-marked-alt" onClick={() => setCurrentScreen('syllableMenu')} />
-                                <MenuCard title="REFLEKSI BACA" subtitle="Uji Ketangkasan" color="from-stone-700 to-stone-900" icon="fa-mountain" onClick={() => setCurrentScreen('reflection')} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl z-10">
+                                <MenuCard title="JEJAK ABJAD" subtitle="A - Z Safari" color="from-emerald-800 to-green-950" icon="fa-paw" onClick={() => setCurrentScreen('alphabet')} />
+                                <MenuCard title="SUMBER VOKAL" subtitle="Pusat Rimba" color="from-orange-600 to-red-800" icon="fa-leaf" onClick={() => setCurrentScreen('vowel')} />
+                                <MenuCard title="LINTAS SUKU KATA" subtitle="Peta Pelajaran" color="from-lime-700 to-emerald-900" icon="fa-map-signs" onClick={() => setCurrentScreen('syllableMenu')} />
+                                <MenuCard title="POS REFLEKSI" subtitle="Uji Ranger" color="from-stone-800 to-black" icon="fa-binoculars" onClick={() => setCurrentScreen('reflection')} />
                             </div>
                         </div>
                     );
@@ -375,16 +409,17 @@
         };
 
         const SyllableMenu = ({ onBack, onSelect }) => (
-            <div className="h-full flex flex-col">
-                <div className="flex items-center justify-between p-4 bg-white shadow-sm sticky top-0 z-20">
-                    <button onClick={onBack} className="bg-emerald-700 text-white w-10 h-10 rounded-full shadow"><i className="fas fa-arrow-left"></i></button>
-                    <h1 className="text-2xl font-bold text-emerald-900 uppercase">Pelajaran Safari</h1><div className="w-10"></div>
+            <div className="h-full flex flex-col relative">
+                <SafariDecoration />
+                <div className="flex items-center justify-between p-4 glass-panel shadow-sm sticky top-0 z-20">
+                    <button onClick={onBack} className="bg-emerald-800 text-white w-10 h-10 rounded-full shadow"><i className="fas fa-arrow-left"></i></button>
+                    <h1 className="text-2xl font-bold text-emerald-950 uppercase">Peta Ekspedisi</h1><div className="w-10"></div>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4 bg-emerald-50">
+                <div className="flex-1 overflow-y-auto p-4 z-10">
                     <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
                         {syllableData.map(item => (
-                            <div key={item.id} onClick={() => onSelect(item)} className="bg-white rounded-xl shadow-md p-4 flex flex-col items-center justify-center cursor-pointer border-b-4 border-emerald-600 transition active:translate-y-1">
-                                <span className="text-4xl font-black text-emerald-800 uppercase mb-1">{item.syllable}</span>
+                            <div key={item.id} onClick={() => onSelect(item)} className="bg-white/90 rounded-xl shadow-md p-4 flex flex-col items-center justify-center cursor-pointer border-b-4 border-orange-600 transition active:translate-y-1">
+                                <span className="text-4xl font-black text-emerald-900 uppercase mb-1">{item.syllable}</span>
                                 <span className="text-sm text-stone-400 capitalize">{item.word}</span>
                             </div>
                         ))}
